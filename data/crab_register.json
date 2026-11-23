@@ -1,0 +1,75 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Farm Owner",
+      "email": "admin@crabfarm.in",
+      "password_hash": "$2a$10$zu338STxZ9.E0t1GEsMWN.aOykUO/79QQ5Hq1JiZh7hMKFuGQ0qJm",
+      "role": "owner",
+      "created_at": "2026-11-23T13:16:26.032Z"
+    },
+    {
+      "id": 2,
+      "name": "Farm Staff",
+      "email": "staff@crabfarm.in",
+      "password_hash": "$2a$10$zu338STxZ9.E0t1GEsMWN.oglPOxtd3Ki3Z48AeSSmeFimqzzJwSC",
+      "role": "staff",
+      "created_at": "2026-11-23T13:16:26.037Z"
+    }
+  ],
+  "settings": {
+    "id": 1,
+    "farm_name": "Vertical Crab Farm Kochi",
+    "box_count": 40,
+    "temp_min": 26,
+    "temp_max": 32,
+    "ph_min": 7.5,
+    "ph_max": 8.5
+  },
+  "species": [
+    {
+      "id": 1,
+      "name": "Mud crab (Scylla serrata)"
+    },
+    {
+      "id": 2,
+      "name": "Orange mud crab (Scylla olivacea)"
+    },
+    {
+      "id": 3,
+      "name": "Green mud crab (Scylla paramamosain)"
+    },
+    {
+      "id": 4,
+      "name": "Blue swimmer crab (Portunus pelagicus)"
+    },
+    {
+      "id": 5,
+      "name": "Other"
+    }
+  ],
+  "batch_numbers_in_use": [],
+  "deliveries": [],
+  "inventory_crabs": [],
+  "boxes": {},
+  "box_weights": [],
+  "box_moults": [],
+  "box_moves": [],
+  "harvests": [],
+  "harvest_items": [],
+  "harvest_files": [],
+  "monitor_readings": [],
+  "seq": {
+    "users": 3,
+    "species": 6,
+    "deliveries": 1,
+    "inventory_crabs": 1,
+    "box_weights": 1,
+    "box_moults": 1,
+    "box_moves": 1,
+    "harvests": 1,
+    "harvest_items": 1,
+    "harvest_files": 1,
+    "monitor_readings": 1
+  }
+}

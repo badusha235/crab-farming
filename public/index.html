@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Crab Box Register</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Crab Box Register</h1>
+      <p class="sub" id="farm">Vertical crab farm</p>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="pill user-pill" id="btn-user" title="Click to switch user or log out">
+        <span id="user-display">👤 Farm Owner (owner)</span>
+      </button>
+      <span class="pill" id="sync">Connecting</span>
+      <button class="btn" id="btn-settings">Settings</button>
+    </div>
+  </header>
+
+  <!-- Tab order is strictly: Inventory, Boxes, Harvest, Monitor. Default opens on Boxes! -->
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <a href="#inventory" data-tab="inventory">Inventory</a>
+    <a href="#boxes" data-tab="boxes" aria-current="page">Boxes</a>
+    <a href="#harvest" data-tab="harvest">Harvest</a>
+    <a href="#monitor" data-tab="monitor">Monitor<span class="alert-dot" id="mon-dot" hidden></span></a>
+  </nav>
+
+  <!-- 1. INVENTORY VIEW -->
+  <section class="view" id="view-inventory" hidden>
+    <section class="stats" id="i-stats" aria-label="Inventory summary"></section>
+    <div class="bar">
+      <button class="btn primary" id="btn-receive">Receive crabs</button>
+      <button class="btn" id="btn-move" disabled>Move to boxes</button>
+      <div class="chips" id="i-chips" role="group" aria-label="Filter inventory"></div>
+      <span class="spacer"></span>
+      <button class="btn small" id="exp-inv">Export CSV</button>
+    </div>
+    <p class="hint" id="i-hint"></p>
+    <div class="tablewrap" id="i-wrap" hidden>
+      <table class="t" style="min-width:720px">
+        <thead>
+          <tr>
+            <th><input type="checkbox" class="tick" id="i-all" aria-label="Select all crabs in stock"></th>
+            <th>Batch no.</th>
+            <th>Seller</th>
+            <th class="r">Weight (kg)</th>
+            <th class="r">Price (&#8377;)</th>
+            <th>Sex</th>
+            <th>Received</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="i-body"></tbody>
+      </table>
+    </div>
+    <section id="i-deliv-wrap" hidden>
+      <h3 class="sec">Deliveries</h3>
+      <div class="tablewrap">
+        <table class="t" style="min-width:560px">
+          <thead>
+            <tr>
+              <th>Received</th>
+              <th>Seller</th>
+              <th class="r">Crabs</th>
+              <th class="r">Weight (kg)</th>
+              <th class="r">Cost (&#8377;)</th>
+              <th class="r">In stock</th>
+              <th class="r">Moved</th>
+            </tr>
+          </thead>
+          <tbody id="i-deliv"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <!-- 2. BOXES VIEW (Opens on Boxes by default!) -->
+  <section class="view" id="view-boxes">
+    <section class="stats" id="stats" aria-label="Farm summary"></section>
+    <div class="bar">
+      <input class="search" id="search" type="search" inputmode="numeric" placeholder="Find box no." aria-label="Find box number">
+      <div class="chips" id="chips" role="group" aria-label="Filter by status"></div>
+      <span class="spacer"></span>
+      <button class="btn small" id="exp-boxes">Export CSV</button>
+    </div>
+    <p class="hint" id="hint"></p>
+    <main class="grid" id="grid"></main>
+  </section>
+
+  <!-- 3. HARVEST VIEW -->
+  <section class="view" id="view-harvest" hidden>
+    <section class="stats" id="h-stats" aria-label="Harvest summary"></section>
+    <div class="bar">
+      <button class="btn primary" id="btn-log-harvest">Log harvest</button>
+      <span class="spacer"></span>
+      <button class="btn small" id="exp-harvest">Export CSV</button>
+    </div>
+    <p class="hint" id="h-hint"></p>
+    <div class="tablewrap" id="h-wrap" hidden>
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Boxes</th>
+            <th class="r">Weight (kg)</th>
+            <th>Size</th>
+            <th class="r">&#8377;/kg</th>
+            <th class="r">Revenue</th>
+            <th>Buyer</th>
+            <th>Documents</th>
+          </tr>
+        </thead>
+        <tbody id="h-body"></tbody>
+        <tfoot id="h-foot"></tfoot>
+      </table>
+    </div>
+    <section id="h-profit-wrap" hidden>
+      <h3 class="sec">Profit by batch number</h3>
+      <div class="tablewrap">
+        <table class="t" style="min-width:640px">
+          <thead>
+            <tr>
+              <th>Batch no.</th>
+              <th>Harvested</th>
+              <th>Box</th>
+              <th class="r">Weight (kg)</th>
+              <th class="r">Buying price</th>
+              <th class="r">Selling price</th>
+              <th class="r">Profit</th>
+            </tr>
+          </thead>
+          <tbody id="h-profit"></tbody>
+          <tfoot id="h-pfoot"></tfoot>
+        </table>
+      </div>
+      <p class="hint">Selling price is each crab&#8217;s share of the sale, split by final weight.</p>
+    </section>
+  </section>
+
+  <!-- 4. MONITOR VIEW -->
+  <section class="view" id="view-monitor" hidden>
+    <div class="bar">
+      <div class="chips" id="range-chips" role="group" aria-label="Time range"></div>
+      <span class="spacer"></span>
+      <button class="btn primary" id="btn-add-reading">Add reading</button>
+      <button class="btn small" id="btn-import">Import CSV</button>
+      <button class="btn small" id="exp-readings">Export CSV</button>
+      <input type="file" id="file-import" accept=".csv,text/csv,text/plain" hidden>
+    </div>
+    <p class="hint" id="m-hint"></p>
+    <div class="sensors" id="sensors"></div>
+    <div class="charts">
+      <div class="chartbox">
+        <h3>Water temperature <small id="t-range"></small></h3>
+        <div class="chart" id="chart-temp"></div>
+        <div class="legend" id="legend-temp"></div>
+      </div>
+      <div class="chartbox">
+        <h3>Water pH <small id="p-range"></small></h3>
+        <div class="chart" id="chart-ph"></div>
+        <div class="legend" id="legend-ph"></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:14px 0 8px">Out-of-range readings</h3>
+      <div class="tablewrap">
+        <table class="t" style="min-width:480px">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Sensor</th>
+              <th>Reading</th>
+            </tr>
+          </thead>
+          <tbody id="alerts"></tbody>
+        </table>
+      </div>
+    </div>
+    <details class="info" style="margin-top:10px">
+      <summary>IoT Device & CSV Integration</summary>
+      <p>IoT sensors and controllers can post readings directly to <code>POST /api/monitor/readings</code> with JSON payload: <code>{"time": "2026-11-23T12:00:00", "temp": 28.5, "ph": 8.0, "source": "Tank 1"}</code>.</p>
+      <p>You can also import CSV files exported from your logger with headers: <code>time,sensor,temp,ph</code>.</p>
+    </details>
+  </section>
+</div>
+
+<!-- SCRIM & BOX SLIDE-IN SHEET -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <div class="sheet-head">
+    <div>
+      <h2 id="sheet-title" tabindex="-1">Box</h2>
+      <p class="muted" id="sheet-sub"></p>
+    </div>
+    <button class="icon-btn" id="sheet-close" aria-label="Close">&times;</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <span class="lbl" id="status-lbl">Status</span>
+      <div class="seg" id="seg" role="group" aria-labelledby="status-lbl">
+        <button type="button" data-status="growing">Growing</button>
+        <button type="button" data-status="molting">Moulting</button>
+        <button type="button" data-status="harvest">Harvest</button>
+        <button type="button" data-status="dead">Dead</button>
+      </div>
+    </div>
+    <div class="field" id="size-field" hidden>
+      <label class="lbl" for="f-size">Current crab size <small>(required for Harvest)</small></label>
+      <select id="f-size">
+        <option value="">Select size</option>
+        <option>Large</option>
+        <option>Medium</option>
+        <option>Small</option>
+        <option>Soft shell</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <h3>At stocking</h3>
+    <div class="fields">
+      <div class="field">
+        <label class="lbl" for="f-w0">Initial weight <small>(kg)</small></label>
+        <input id="f-w0" type="number" inputmode="decimal" min="0" step="0.001" placeholder="e.g. 0.085">
+      </div>
+      <div class="field">
+        <label class="lbl" for="f-date">Stocking date <small>(age starts here)</small></label>
+        <input id="f-date" type="date">
+      </div>
+      <div class="field full">
+        <span class="lbl">Sex <small>(tap again to clear)</small></span>
+        <div id="f-sex-seg"></div>
+      </div>
+      <div class="field full">
+        <label class="lbl" for="f-species">Species</label>
+        <select id="f-species"></select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="f-bn">Batch no.</label>
+        <input id="f-bn" type="text" maxlength="20">
+      </div>
+      <div class="field">
+        <label class="lbl" for="f-cost">Purchase cost <small>(&#8377;)</small></label>
+        <input id="f-cost" type="number" inputmode="decimal" min="0" step="1">
+      </div>
+      <div class="field full">
+        <label class="lbl" for="f-batch">Batch / source</label>
+        <input id="f-batch" type="text" placeholder="e.g. Hatchery B-14">
+      </div>
+    </div>
+
+    <h3>Growth log</h3>
+    <p class="summary" id="summary"></p>
+    <div class="log" id="log"></div>
+    <div class="add-row">
+      <div class="field">
+        <label class="lbl" for="w-date">Date</label>
+        <input id="w-date" type="date">
+      </div>
+      <div class="field">
+        <label class="lbl" for="w-g">Weight <small>(kg)</small></label>
+        <input id="w-g" type="number" inputmode="decimal" min="0" step="0.001">
+      </div>
+      <button type="button" class="btn small" id="btn-weigh">Add</button>
+    </div>
+
+    <h3>Moults</h3>
+    <div class="chips-m" id="moults"></div>
+    <div><button type="button" class="btn small" id="btn-moult">Record moult today</button></div>
+
+    <div class="field">
+      <label class="lbl" for="f-notes">Notes <small>(feed, water, health)</small></label>
+      <textarea id="f-notes"></textarea>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button type="button" class="btn danger ghost" id="btn-del">Delete record</button>
+    <button type="button" class="btn" id="btn-bmove">Move to another box</button>
+    <span class="spacer"></span>
+    <button type="button" class="btn" id="btn-cancel">Cancel</button>
+    <button type="button" class="btn primary" id="btn-save">Save box</button>
+  </div>
+</aside>
+
+<!-- RECEIVE CRABS MODAL (ROOMY CARDS) -->
+<div class="modal" id="receive-modal" hidden>
+  <div class="card xl" role="dialog" aria-modal="true" aria-labelledby="rc-title">
+    <h2 id="rc-title">Receive crabs</h2>
+    <div class="fields">
+      <div class="field full">
+        <label class="lbl" for="rc-seller">Seller</label>
+        <input id="rc-seller" type="text" list="rc-sellers" maxlength="60" placeholder="e.g. Kochi Fish Co">
+        <datalist id="rc-sellers"></datalist>
+      </div>
+      <div class="field">
+        <label class="lbl" for="rc-date">Received on</label>
+        <input id="rc-date" type="date">
+      </div>
+      <div class="field">
+        <label class="lbl" for="rc-count">Number of crabs</label>
+        <input id="rc-count" type="number" inputmode="numeric" min="1" max="100" step="1">
+      </div>
+      <div class="field full">
+        <label class="lbl" for="rc-species">Species</label>
+        <select id="rc-species"></select>
+      </div>
+      <div class="field full">
+        <label class="lbl" for="rc-priceall">Same price for every crab <small>(&#8377; each, optional)</small></label>
+        <div class="inline" style="display:flex;gap:8px;align-items:center">
+          <input id="rc-priceall" type="number" inputmode="decimal" min="0" step="1">
+          <button type="button" class="btn" id="rc-applyprice">Apply to all</button>
+        </div>
+      </div>
+    </div>
+    <div class="rcards" id="rc-rows"></div>
+    <p class="calc" id="rc-calc"></p>
+    <div class="actions">
+      <button class="btn" id="rc-cancel">Cancel</button>
+      <button class="btn primary" id="rc-save">Add to inventory</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVE TO BOXES MODAL -->
+<div class="modal" id="move-modal" hidden>
+  <div class="card wide" role="dialog" aria-modal="true" aria-labelledby="mv-title">
+    <h2 id="mv-title">Move to boxes</h2>
+    <div class="field">
+      <label class="lbl" for="mv-date">Stocking date <small>(age starts here)</small></label>
+      <input id="mv-date" type="date">
+    </div>
+    <div class="tablewrap">
+      <table class="t" style="min-width:0">
+        <thead>
+          <tr>
+            <th>Batch no.</th>
+            <th class="r">Weight (kg)</th>
+            <th>Box no.</th>
+          </tr>
+        </thead>
+        <tbody id="mv-rows"></tbody>
+      </table>
+    </div>
+    <p class="calc" id="mv-calc"></p>
+    <div class="actions">
+      <button class="btn" id="mv-cancel">Cancel</button>
+      <button class="btn primary" id="mv-save">Move crabs</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CRAB MODAL -->
+<div class="modal" id="crab-modal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cr-title">
+    <div>
+      <h2 id="cr-title">Crab</h2>
+      <p class="muted" id="cr-sub" style="margin:2px 0 0;font-size:13px"></p>
+    </div>
+    <div class="fields">
+      <div class="field">
+        <label class="lbl" for="cr-bn">Batch no.</label>
+        <input id="cr-bn" type="text" maxlength="20">
+      </div>
+      <div class="field">
+        <label class="lbl" for="cr-g">Weight <small>(kg)</small></label>
+        <input id="cr-g" type="number" inputmode="decimal" min="0" step="0.001">
+      </div>
+      <div class="field">
+        <label class="lbl" for="cr-price">Buying price <small>(&#8377;)</small></label>
+        <input id="cr-price" type="number" inputmode="decimal" min="0" step="1">
+      </div>
+      <div class="field">
+        <label class="lbl" for="cr-species">Species</label>
+        <select id="cr-species"></select>
+      </div>
+      <div class="field full">
+        <span class="lbl">Sex <small>(tap again to clear)</small></span>
+        <div id="cr-sex-seg"></div>
+      </div>
+      <div class="field full">
+        <label class="lbl" for="cr-notes">Notes</label>
+        <input id="cr-notes" type="text">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn danger ghost" id="cr-del">Remove from inventory</button>
+      <span class="spacer"></span>
+      <button class="btn" id="cr-cancel">Cancel</button>
+      <button class="btn primary" id="cr-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVE TO ANOTHER BOX MODAL -->
+<div class="modal" id="bmove-modal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="bm-title">
+    <h2 id="bm-title">Move to another box</h2>
+    <p class="muted" id="bm-sub" style="margin:0;font-size:14px"></p>
+    <div class="field">
+      <label class="lbl" for="bm-n">New box no.</label>
+      <input id="bm-n" type="number" inputmode="numeric" min="1" max="500" step="1">
+    </div>
+    <p class="calc" id="bm-calc"></p>
+    <div class="actions">
+      <button class="btn" id="bm-cancel">Cancel</button>
+      <button class="btn primary" id="bm-save">Move crab</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG / EDIT HARVEST MODAL -->
+<div class="modal" id="harvest-modal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="h-title">
+    <h2 id="h-title">Log harvest</h2>
+    <div class="fields">
+      <div class="field">
+        <label class="lbl" for="h-date">Harvest date</label>
+        <input id="h-date" type="date">
+      </div>
+      <div class="field">
+        <label class="lbl" for="h-grade">Crab size</label>
+        <select id="h-grade">
+          <option value="">Select size</option>
+          <option>Large</option>
+          <option>Medium</option>
+          <option>Small</option>
+          <option>Soft shell</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field full">
+        <div class="pick-head">
+          <span class="lbl" id="h-boxes-lbl">Boxes in Harvest status</span>
+          <span id="h-pick-actions">
+            <button type="button" class="btn small ghost" id="h-all">Select all</button>
+            <button type="button" class="btn small ghost" id="h-none">Clear</button>
+          </span>
+        </div>
+        <div class="pick" id="h-boxes" role="group" aria-labelledby="h-boxes-lbl"></div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="h-g">Total weight <small>(kg)</small></label>
+        <input id="h-g" type="number" inputmode="decimal" min="0" step="0.001">
+      </div>
+      <div class="field">
+        <label class="lbl" for="h-price">Price <small>(&#8377; per kg)</small></label>
+        <input id="h-price" type="number" inputmode="decimal" min="0" step="1">
+      </div>
+      <div class="field full">
+        <label class="lbl" for="h-buyer">Buyer</label>
+        <input id="h-buyer" type="text" placeholder="e.g. Oceanic Exports">
+      </div>
+      <div class="field full">
+        <label class="lbl" for="h-notes">Notes</label>
+        <input id="h-notes" type="text">
+      </div>
+      <div class="field full">
+        <span class="lbl">Documents <small>(bill, receipt, certificate, up to 20 MB)</small></span>
+        <div class="files" id="h-files"></div>
+        <div style="margin-top:6px">
+          <button type="button" class="btn small" id="h-attach">Attach document</button>
+          <input type="file" id="h-file" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt,.md,.json" hidden>
+        </div>
+      </div>
+    </div>
+    <p class="calc" id="h-info"></p>
+    <p class="calc" id="h-calc"></p>
+    <div class="actions">
+      <button class="btn danger ghost" id="h-del" hidden>Delete</button>
+      <span class="spacer"></span>
+      <button class="btn" id="h-cancel">Cancel</button>
+      <button class="btn primary" id="h-save">Save harvest</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MONITOR READING MODAL -->
+<div class="modal" id="reading-modal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="r-title">
+    <h2 id="r-title">Add reading</h2>
+    <div class="fields">
+      <div class="field full">
+        <label class="lbl" for="r-loc">Sensor or location</label>
+        <input id="r-loc" type="text" list="r-locs" maxlength="40" placeholder="e.g. Rack A tank">
+        <datalist id="r-locs"></datalist>
+      </div>
+      <div class="field full">
+        <label class="lbl" for="r-time">Time</label>
+        <input id="r-time" type="datetime-local">
+      </div>
+      <div class="field">
+        <label class="lbl" for="r-temp">Temperature <small>(&deg;C)</small></label>
+        <input id="r-temp" type="number" inputmode="decimal" step="0.1" placeholder="e.g. 28.5">
+      </div>
+      <div class="field">
+        <label class="lbl" for="r-ph">pH</label>
+        <input id="r-ph" type="number" inputmode="decimal" step="0.01" min="0" max="14" placeholder="e.g. 8.0">
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="r-cancel">Cancel</button>
+      <button class="btn primary" id="r-save">Save reading</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settings" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="set-title">
+    <h2 id="set-title">Farm setup</h2>
+    <div class="field">
+      <label class="lbl" for="s-farm">Farm name</label>
+      <input id="s-farm" type="text" maxlength="60" placeholder="e.g. Vertical Crab Farm Kochi">
+    </div>
+    <div class="field">
+      <label class="lbl" for="s-count">Number of boxes</label>
+      <input id="s-count" type="number" inputmode="numeric" min="1" max="500" step="1">
+    </div>
+    <p class="muted" style="margin:0;font-size:13px">Boxes are numbered 1 to N (up to 500). Any occupied box stays visible.</p>
+    
+    <h3>Safe water range</h3>
+    <div class="fields">
+      <div class="field">
+        <label class="lbl" for="s-tmin">Temp min <small>(&deg;C)</small></label>
+        <input id="s-tmin" type="number" inputmode="decimal" step="0.1">
+      </div>
+      <div class="field">
+        <label class="lbl" for="s-tmax">Temp max <small>(&deg;C)</small></label>
+        <input id="s-tmax" type="number" inputmode="decimal" step="0.1">
+      </div>
+      <div class="field">
+        <label class="lbl" for="s-pmin">pH min</label>
+        <input id="s-pmin" type="number" inputmode="decimal" step="0.1">
+      </div>
+      <div class="field">
+        <label class="lbl" for="s-pmax">pH max</label>
+        <input id="s-pmax" type="number" inputmode="decimal" step="0.1">
+      </div>
+    </div>
+    <p class="muted" style="margin:0;font-size:13px">Readings outside this range show in red and trigger an alert dot on the Monitor tab.</p>
+    
+    <div class="actions">
+      <button class="btn" id="s-cancel">Cancel</button>
+      <button class="btn primary" id="s-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER LOGIN / PROFILE MODAL -->
+<div class="modal" id="user-modal" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="u-title">
+    <h2 id="u-title">User Account</h2>
+    <div id="u-current-info" style="font-size:14px;background:var(--surface2);padding:10px;border-radius:8px"></div>
+    <h3>Quick Switch or Sign In</h3>
+    <div class="fields">
+      <div class="field full">
+        <label class="lbl" for="u-quick">Switch Role</label>
+        <select id="u-quick">
+          <option value="admin@crabfarm.in">Farm Owner (admin@crabfarm.in)</option>
+          <option value="staff@crabfarm.in">Farm Staff (staff@crabfarm.in)</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="u-cancel">Close</button>
+      <button class="btn primary" id="u-switch">Switch User</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST MESSAGE -->
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
