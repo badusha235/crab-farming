@@ -84,10 +84,39 @@
     },
 
     // Auth
-    login: function (email, password) {
+    isLoggedIn: function () {
+      return !!(this.getToken() && localStorage.getItem(USER_KEY));
+    },
+
+    logout: function () {
+      this.setAuth(null, null);
+    },
+
+    sendOtp: function (phone) {
+      return this.request('/auth/send-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phone: phone })
+      });
+    },
+
+    verifyOtp: function (phone, otp, name, role) {
+      return this.request('/auth/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phone: phone, otp: otp, name: name, role: role })
+      });
+    },
+
+    registerWithEmail: function (name, email, password, role) {
+      return this.request('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name: name, email: email, password: password, role: role })
+      });
+    },
+
+    login: function (identifier, password) {
       return this.request('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: email, password: password })
+        body: JSON.stringify({ identifier: identifier, password: password })
       });
     },
 

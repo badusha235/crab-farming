@@ -245,21 +245,10 @@
   /* ---------- Sync and Header ---------- */
   function renderHeader() {
     $('#farm').textContent = S.settings.farm_name || 'Vertical crab farm';
-    var p = $('#sync');
-    var user = window.CrabApi.getUser();
-    $('#user-display').textContent = '👤 ' + user.name + ' (' + user.role + ')';
-
-    p.className = 'pill';
-    if (window.CrabApi.mode === 'synced') {
-      p.className = 'pill ok';
-      p.textContent = 'Synced';
-      p.title = 'Shared data active and synced with server';
-    } else if (window.CrabApi.mode === 'offline') {
-      p.className = 'pill warn';
-      p.textContent = 'This device only';
-      p.title = 'Server not reached. Data stored locally on this device.';
-    } else {
-      p.textContent = 'Connecting';
+    var userDisplay = $('#user-display');
+    if (userDisplay) {
+      var user = window.CrabApi.getUser();
+      userDisplay.textContent = user ? ('👤 ' + user.name + ' (' + user.role + ')') : '';
     }
   }
 
@@ -2016,25 +2005,29 @@
     }
   }
 
-  function openUserModal() {
-    var u = window.CrabApi.getUser();
-    $('#u-current-info').innerHTML = 'Logged in as: <b>' + u.name + '</b><br>Email: ' + u.email + '<br>Role: <b>' + u.role + '</b>';
-    $('#u-quick').value = u.email;
-    $('#user-modal').hidden = false;
+  function handleLogout() {
+    window.CrabApi.logout();
+    showLoginView();
+    toast('Signed out successfully');
   }
 
-  async function switchUser() {
-    var email = $('#u-quick').value;
-    var password = (email === 'admin@crabfarm.in') ? 'admin123' : 'staff123';
-    try {
-      var res = await window.CrabApi.login(email, password);
-      window.CrabApi.setAuth(res.token, res.user);
-      $('#user-modal').hidden = true;
-      renderHeader();
-      toast('Signed in as ' + res.user.name + ' (' + res.user.role + ')');
-    } catch (err) {
-      toast('Login failed: ' + err.message);
-    }
+  function showLoginView() {
+    $('#view-login').hidden = false;
+    $('#main-app').hidden = true;
+    $('#otp-step-request').hidden = false;
+    $('#otp-step-verify').hidden = true;
+    $('#dev-otp-box').hidden = true;
+    $('#new-user-box').hidden = true;
+    $('#l-otp').value = '';
+  }
+
+  async function showMainApp() {
+    $('#view-login').hidden = true;
+    $('#main-app').hidden = false;
+    renderAll();
+    await loadData();
+    renderAll();
+    route();
   }
 
   /* ---------- CSV Export Client Trigger ---------- */
@@ -2109,11 +2102,200 @@
   function initEvents() {
     // Header actions
     $('#btn-settings').addEventListener('click', openSettingsModal);
-    $('#btn-user').addEventListener('click', openUserModal);
+    $('#btn-header-logout').addEventListener('click', handleLogout);
     $('#s-cancel').addEventListener('click', function () { $('#settings').hidden = true; });
     $('#s-save').addEventListener('click', saveSettings);
-    $('#u-cancel').addEventListener('click', function () { $('#user-modal').hidden = true; });
-    $('#u-switch').addEventListener('click', switchUser);
+
+    // --- Login Page Events ---
+    var sentOtpData = null;
+
+    $('#tab-auth-phone').addEventListener('click', function () {
+      $('#tab-auth-phone').classList.add('active');
+      $('#tab-auth-email').classList.remove('active');
+      $('#tab-auth-demo').classList.remove('active');
+      $('#panel-auth-phone').hidden = false;
+      $('#panel-auth-email').hidden = true;
+      $('#panel-auth-demo').hidden = true;
+    });
+
+    $('#tab-auth-email').addEventListener('click', function () {
+      $('#tab-auth-email').classList.add('active');
+      $('#tab-auth-phone').classList.remove('active');
+      $('#tab-auth-demo').classList.remove('active');
+      $('#panel-auth-email').hidden = false;
+      $('#panel-auth-phone').hidden = true;
+      $('#panel-auth-demo').hidden = true;
+    });
+
+    $('#tab-auth-demo').addEventListener('click', function () {
+      $('#tab-auth-demo').classList.add('active');
+      $('#tab-auth-phone').classList.remove('active');
+      $('#tab-auth-email').classList.remove('active');
+      $('#panel-auth-demo').hidden = false;
+      $('#panel-auth-phone').hidden = true;
+      $('#panel-auth-email').hidden = true;
+    });
+
+    $('#subtab-email-signin').addEventListener('click', function () {
+      $('#subtab-email-signin').classList.add('active');
+      $('#subtab-email-signup').classList.remove('active');
+      $('#email-signin-form').hidden = false;
+      $('#email-signup-form').hidden = true;
+    });
+
+    $('#subtab-email-signup').addEventListener('click', function () {
+      $('#subtab-email-signup').classList.add('active');
+      $('#subtab-email-signin').classList.remove('active');
+      $('#email-signup-form').hidden = false;
+      $('#email-signin-form').hidden = true;
+    });
+
+    async function doSendOtp() {
+      var phone = $('#l-phone').value.trim();
+      var clean = phone.replace(/\D/g, '');
+      if (clean.length < 10) {
+        toast('Please enter a valid 10-digit mobile number');
+        return;
+      }
+      $('#btn-send-otp').disabled = true;
+      try {
+        var res = await window.CrabApi.sendOtp(clean);
+        sentOtpData = res;
+        $('#disp-phone').textContent = res.phone;
+        $('#otp-step-request').hidden = true;
+        $('#otp-step-verify').hidden = false;
+        $('#new-user-box').hidden = res.exists;
+
+        if (res.dev_otp) {
+          $('#dev-otp-val').textContent = res.dev_otp;
+          $('#dev-otp-box').hidden = false;
+        } else {
+          $('#dev-otp-box').hidden = true;
+        }
+
+        if (!res.exists) {
+          $('#new-phone-name').value = '';
+          $('#new-phone-name').focus();
+        } else {
+          $('#l-otp').focus();
+        }
+        toast(res.message);
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        $('#btn-send-otp').disabled = false;
+      }
+    }
+
+    $('#btn-send-otp').addEventListener('click', doSendOtp);
+    $('#btn-resend-otp').addEventListener('click', doSendOtp);
+
+    $('#btn-change-phone').addEventListener('click', function () {
+      $('#otp-step-request').hidden = false;
+      $('#otp-step-verify').hidden = true;
+      $('#l-phone').focus();
+    });
+
+    $('#btn-autofill-otp').addEventListener('click', function () {
+      if (sentOtpData && sentOtpData.dev_otp) {
+        $('#l-otp').value = sentOtpData.dev_otp;
+        toast('Verification code filled');
+      }
+    });
+
+    $('#btn-verify-otp').addEventListener('click', async function () {
+      var phone = sentOtpData ? sentOtpData.phone : $('#l-phone').value.trim();
+      var otp = $('#l-otp').value.trim();
+      if (!otp || otp.length !== 6) {
+        toast('Please enter the 6-digit OTP');
+        return;
+      }
+      var name = '';
+      var role = 'staff';
+      if (sentOtpData && !sentOtpData.exists) {
+        name = $('#new-phone-name').value.trim();
+        if (!name) {
+          toast('Please enter your full name');
+          $('#new-phone-name').focus();
+          return;
+        }
+        role = $('#new-phone-role').value;
+      }
+
+      $('#btn-verify-otp').disabled = true;
+      try {
+        var res = await window.CrabApi.verifyOtp(phone, otp, name, role);
+        window.CrabApi.setAuth(res.token, res.user);
+        toast((res.created ? 'Account created! Welcome, ' : 'Welcome back, ') + res.user.name);
+        await showMainApp();
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        $('#btn-verify-otp').disabled = false;
+      }
+    });
+
+    $('#btn-email-signin').addEventListener('click', async function () {
+      var email = $('#em-login-email').value.trim();
+      var pass = $('#em-login-pass').value;
+      if (!email || !pass) {
+        toast('Please enter email/mobile and password');
+        return;
+      }
+      $('#btn-email-signin').disabled = true;
+      try {
+        var res = await window.CrabApi.login(email, pass);
+        window.CrabApi.setAuth(res.token, res.user);
+        toast('Signed in as ' + res.user.name);
+        await showMainApp();
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        $('#btn-email-signin').disabled = false;
+      }
+    });
+
+    $('#btn-email-signup').addEventListener('click', async function () {
+      var name = $('#em-reg-name').value.trim();
+      var email = $('#em-reg-email').value.trim();
+      var phone = $('#em-reg-phone').value.trim();
+      var pass = $('#em-reg-pass').value;
+      var role = $('#em-reg-role').value;
+
+      if (!name) { toast('Please enter your full name'); return; }
+      if (!email && !phone) { toast('Please enter email or mobile number'); return; }
+      if (!pass || pass.length < 4) { toast('Password must be at least 4 characters'); return; }
+
+      $('#btn-email-signup').disabled = true;
+      try {
+        var res = await window.CrabApi.request('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ name: name, email: email, phone: phone, password: pass, role: role })
+        });
+        window.CrabApi.setAuth(res.token, res.user);
+        toast('Account created! Welcome, ' + res.user.name);
+        await showMainApp();
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        $('#btn-email-signup').disabled = false;
+      }
+    });
+
+    document.querySelectorAll('.demo-acc-btn').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var email = this.getAttribute('data-email');
+        var pass = this.getAttribute('data-pass');
+        try {
+          var res = await window.CrabApi.login(email, pass);
+          window.CrabApi.setAuth(res.token, res.user);
+          toast('Signed in as ' + res.user.name);
+          await showMainApp();
+        } catch (err) {
+          toast(err.message);
+        }
+      });
+    });
 
     // Boxes View
     $('#search').addEventListener('input', function (e) {
@@ -2289,7 +2471,7 @@
     // Escape Key Handler for all modals
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
-        var modalIds = ['#reading-modal', '#move-modal', '#crab-modal', '#receive-modal', '#harvest-modal', '#settings', '#user-modal', '#bmove-modal'];
+        var modalIds = ['#reading-modal', '#move-modal', '#crab-modal', '#receive-modal', '#harvest-modal', '#settings', '#bmove-modal'];
         for (var i = 0; i < modalIds.length; i++) {
           if (!$(modalIds[i]).hidden) { $(modalIds[i]).hidden = true; return; }
         }
@@ -2315,10 +2497,12 @@
   // Initial startup
   async function startApp() {
     initEvents();
-    renderAll();
-    await loadData();
-    renderAll();
-    route();
+
+    if (!window.CrabApi.isLoggedIn()) {
+      showLoginView();
+    } else {
+      await showMainApp();
+    }
 
     // Auto-ping connection every 30s
     setInterval(function () {

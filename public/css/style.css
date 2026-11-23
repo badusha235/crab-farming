@@ -381,6 +381,66 @@ table.t { border-collapse: collapse; width: 100%; min-width: 600px; font-variant
 }
 .pager .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Login Page */
+.login-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px; background: var(--bg);
+}
+.login-card {
+  width: min(440px, 100%); background: var(--surface); border-radius: 16px;
+  box-shadow: var(--shadow); padding: 28px 24px; display: flex; flex-direction: column;
+  gap: 16px; border: 1px solid var(--line);
+}
+.login-brand { text-align: center; }
+.login-logo { font-size: 42px; display: block; margin-bottom: 6px; }
+.login-brand h2 { font-size: 22px; }
+.login-sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.auth-tabs, .auth-subtabs {
+  display: flex; gap: 4px; background: var(--surface2); padding: 4px; border-radius: 10px;
+}
+.auth-tab, .auth-subtab {
+  flex: 1; border: none; background: transparent; padding: 8px 6px; font-size: 13px;
+  font-weight: 600; color: var(--muted); border-radius: 7px; cursor: pointer; transition: all .15s;
+}
+.auth-tab.active, .auth-subtab.active {
+  background: var(--surface); color: var(--fg); box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.auth-panel { display: flex; flex-direction: column; gap: 12px; }
+.phone-input-row {
+  display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); overflow: hidden;
+}
+.phone-prefix {
+  padding: 0 12px; font-weight: 600; color: var(--muted); background: var(--surface2);
+  border-right: 1px solid var(--line); line-height: 42px; font-size: 15px; user-select: none;
+}
+.phone-input-row input {
+  border: none; outline: none; padding: 10px 12px; font-size: 16px; width: 100%;
+  letter-spacing: 1px; font-family: monospace;
+}
+.otp-banner {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface2); padding: 8px 12px; border-radius: 8px; font-size: 13px;
+}
+.btn-link {
+  background: none; border: none; color: var(--focus); cursor: pointer; font-size: 13px;
+  padding: 0; text-decoration: underline; font-weight: 500;
+}
+.dev-otp-box {
+  background: #e6f6ee; border: 1px dashed var(--good); color: #0b4a22;
+  padding: 8px 12px; border-radius: 8px; font-size: 13px; display: flex;
+  align-items: center; justify-content: space-between;
+}
+.otp-input {
+  text-align: center; font-size: 24px; letter-spacing: 8px; font-family: monospace; font-weight: 700;
+}
+.demo-acc-btn {
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+  padding: 10px 14px; gap: 2px;
+}
+.full-w { width: 100%; }
+.flex-1 { flex: 1; }
+
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 30; background: var(--fg); color: var(--surface); padding: 10px 16px; border-radius: 10px;

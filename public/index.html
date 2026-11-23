@@ -9,18 +9,152 @@
 </head>
 <body>
 
-<div class="app">
+<!-- LOGIN / REGISTRATION PAGE -->
+<div class="login-page" id="view-login" hidden>
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="login-logo">🦀</span>
+      <h2>Crab Box Register</h2>
+      <p class="login-sub">Vertical Crab Aquaculture System</p>
+    </div>
+
+    <!-- Auth Method Tabs -->
+    <div class="auth-tabs" role="tablist">
+      <button type="button" class="auth-tab active" id="tab-auth-phone">📱 Mobile OTP</button>
+      <button type="button" class="auth-tab" id="tab-auth-email">📧 Email / Password</button>
+      <button type="button" class="auth-tab" id="tab-auth-demo">⚡ Quick Demo</button>
+    </div>
+
+    <!-- 1. MOBILE OTP SECTION -->
+    <div class="auth-panel" id="panel-auth-phone">
+      <!-- Step 1: Request OTP -->
+      <div id="otp-step-request">
+        <label class="lbl" for="l-phone">Mobile Number</label>
+        <div class="phone-input-row">
+          <span class="phone-prefix">+91</span>
+          <input id="l-phone" type="tel" inputmode="numeric" maxlength="10" placeholder="Enter 10-digit number" autocomplete="tel">
+        </div>
+        <p class="muted" style="margin-top:6px;font-size:13px">New users can enter their mobile number to register instantly with OTP.</p>
+        <button type="button" class="btn primary full-w" id="btn-send-otp" style="margin-top:14px">Send Verification Code</button>
+      </div>
+
+      <!-- Step 2: Enter OTP & (Optional) New User Info -->
+      <div id="otp-step-verify" hidden>
+        <div class="otp-banner">
+          <span>OTP sent to <b>+91 <span id="disp-phone"></span></b></span>
+          <button type="button" class="btn-link" id="btn-change-phone">Change</button>
+        </div>
+
+        <div id="dev-otp-box" class="dev-otp-box" hidden>
+          <span>💡 Test OTP: <strong id="dev-otp-val">123456</strong></span>
+          <button type="button" class="btn small ghost" id="btn-autofill-otp">Auto-fill</button>
+        </div>
+
+        <!-- Extra fields shown only if new user -->
+        <div id="new-user-box" hidden style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px">
+          <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:var(--focus)">✨ New user detected! Set up your account:</p>
+          <div class="field" style="margin-bottom:8px">
+            <label class="lbl" for="new-phone-name">Your Full Name</label>
+            <input id="new-phone-name" type="text" placeholder="e.g. Ramesh Kumar" maxlength="60">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="lbl" for="new-phone-role">Farm Role</label>
+            <select id="new-phone-role">
+              <option value="owner">Farm Owner (Full admin & settings access)</option>
+              <option value="staff" selected>Farm Staff (Daily farming & operations)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:14px">
+          <label class="lbl" for="l-otp">Enter 6-Digit OTP</label>
+          <input id="l-otp" type="text" inputmode="numeric" maxlength="6" placeholder="• • • • • •" class="otp-input">
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button type="button" class="btn" id="btn-resend-otp">Resend OTP</button>
+          <button type="button" class="btn primary flex-1" id="btn-verify-otp">Verify & Sign In</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. EMAIL SECTION -->
+    <div class="auth-panel" id="panel-auth-email" hidden>
+      <div class="auth-subtabs">
+        <button type="button" class="auth-subtab active" id="subtab-email-signin">Sign In</button>
+        <button type="button" class="auth-subtab" id="subtab-email-signup">Create Account</button>
+      </div>
+
+      <!-- Email Sign In -->
+      <div id="email-signin-form">
+        <div class="field">
+          <label class="lbl" for="em-login-email">Email or Mobile Number</label>
+          <input id="em-login-email" type="text" placeholder="e.g. admin@crabfarm.in or 9876543210">
+        </div>
+        <div class="field">
+          <label class="lbl" for="em-login-pass">Password</label>
+          <input id="em-login-pass" type="password" placeholder="Enter password">
+        </div>
+        <button type="button" class="btn primary full-w" id="btn-email-signin" style="margin-top:14px">Sign In</button>
+      </div>
+
+      <!-- Email Sign Up -->
+      <div id="email-signup-form" hidden>
+        <div class="field">
+          <label class="lbl" for="em-reg-name">Full Name</label>
+          <input id="em-reg-name" type="text" placeholder="e.g. Ramesh Kumar">
+        </div>
+        <div class="field">
+          <label class="lbl" for="em-reg-email">Email Address</label>
+          <input id="em-reg-email" type="email" placeholder="e.g. ramesh@crabfarm.in">
+        </div>
+        <div class="field">
+          <label class="lbl" for="em-reg-phone">Mobile Number (Optional)</label>
+          <input id="em-reg-phone" type="tel" maxlength="10" placeholder="10-digit mobile number">
+        </div>
+        <div class="field">
+          <label class="lbl" for="em-reg-pass">Create Password</label>
+          <input id="em-reg-pass" type="password" placeholder="At least 4 characters">
+        </div>
+        <div class="field">
+          <label class="lbl" for="em-reg-role">Farm Role</label>
+          <select id="em-reg-role">
+            <option value="owner">Farm Owner (Full access)</option>
+            <option value="staff" selected>Farm Staff (Daily farming)</option>
+          </select>
+        </div>
+        <button type="button" class="btn primary full-w" id="btn-email-signup" style="margin-top:14px">Create Account & Sign In</button>
+      </div>
+    </div>
+
+    <!-- 3. DEMO ACCOUNTS SECTION -->
+    <div class="auth-panel" id="panel-auth-demo" hidden>
+      <p class="muted" style="margin-top:0;font-size:13px">Instantly sign in with pre-configured farm accounts:</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+        <button type="button" class="btn full-w demo-acc-btn" data-email="admin@crabfarm.in" data-pass="admin123">
+          <b>👑 Farm Owner</b>
+          <small>admin@crabfarm.in • Full admin & settings permissions</small>
+        </button>
+        <button type="button" class="btn full-w demo-acc-btn" data-email="staff@crabfarm.in" data-pass="staff123">
+          <b>👤 Farm Staff</b>
+          <small>staff@crabfarm.in • Daily farming & inventory operations</small>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="app" id="main-app">
   <header class="top">
     <div>
       <h1>Crab Box Register</h1>
       <p class="sub" id="farm">Vertical crab farm</p>
     </div>
     <div class="top-actions">
-      <button type="button" class="pill user-pill" id="btn-user" title="Click to switch user or log out">
-        <span id="user-display">👤 Farm Owner (owner)</span>
-      </button>
-      <span class="pill" id="sync">Connecting</span>
+      <span id="user-display" style="font-size:13px;color:var(--muted);font-weight:500;margin-right:2px"></span>
       <button class="btn" id="btn-settings">Settings</button>
+      <button class="btn danger ghost" id="btn-header-logout">Log Out</button>
     </div>
   </header>
 
@@ -553,28 +687,6 @@
     <div class="actions">
       <button class="btn" id="s-cancel">Cancel</button>
       <button class="btn primary" id="s-save">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- USER LOGIN / PROFILE MODAL -->
-<div class="modal" id="user-modal" hidden>
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="u-title">
-    <h2 id="u-title">User Account</h2>
-    <div id="u-current-info" style="font-size:14px;background:var(--surface2);padding:10px;border-radius:8px"></div>
-    <h3>Quick Switch or Sign In</h3>
-    <div class="fields">
-      <div class="field full">
-        <label class="lbl" for="u-quick">Switch Role</label>
-        <select id="u-quick">
-          <option value="admin@crabfarm.in">Farm Owner (admin@crabfarm.in)</option>
-          <option value="staff@crabfarm.in">Farm Staff (staff@crabfarm.in)</option>
-        </select>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="btn" id="u-cancel">Close</button>
-      <button class="btn primary" id="u-switch">Switch User</button>
     </div>
   </div>
 </div>

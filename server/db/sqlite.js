@@ -206,6 +206,24 @@ async function initSQLite() {
     CREATE INDEX IF NOT EXISTS idx_mon_recorded ON monitor_readings(recorded_at);
   `);
 
+  try {
+    await exec('ALTER TABLE users ADD COLUMN phone TEXT;');
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    await exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone);');
+  } catch (e) {}
+
+  await exec(`
+    CREATE TABLE IF NOT EXISTS otps (
+      phone TEXT PRIMARY KEY,
+      otp TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Check if users exist; if not seed or import from json
   const userCount = await get('SELECT COUNT(*) as c FROM users');
   if (userCount.c === 0) {
@@ -364,23 +382,64 @@ async function importFromJson(jsonPath) {
 
 class SQLiteAdapter {
   async findUserByEmail(email) {
+    if (!email) return null;
     return get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [email]);
+  }
+
+  async findUserByPhone(phone) {
+    if (!phone) return null;
+    return get('SELECT * FROM users WHERE phone = ?', [phone]);
+  }
+
+  async findUserByIdentifier(identifier) {
+    if (!identifier) return null;
+    const val = String(identifier).trim();
+    return get('SELECT * FROM users WHERE phone = ? OR LOWER(email) = LOWER(?)', [val, val]);
   }
 
   async findUserById(id) {
     return get('SELECT * FROM users WHERE id = ?', [id]);
   }
 
-  async createUser(name, email, passwordHash, role = 'staff') {
+  async createUser(name, email, passwordHash, role = 'staff', phone = null) {
     const res = await run(
-      'INSERT INTO users (name, email, password_hash, role) VALUES (?, LOWER(?), ?, ?)',
-      [name, email, passwordHash, role]
+      'INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, LOWER(?), ?, ?, ?)',
+      [name, email ? email.toLowerCase() : null, phone, passwordHash || '', role]
     );
-    return { id: res.lastID, name, email: email.toLowerCase(), role, created_at: new Date().toISOString() };
+    return { id: res.lastID, name, email: email ? email.toLowerCase() : null, phone, role, created_at: new Date().toISOString() };
+  }
+
+  async createUserWithPhone(name, phone, role = 'staff', email = null) {
+    const res = await run(
+      'INSERT INTO users (name, phone, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+      [name, phone, email ? email.toLowerCase() : null, '', role]
+    );
+    return { id: res.lastID, name, phone, email: email ? email.toLowerCase() : null, role, created_at: new Date().toISOString() };
+  }
+
+  async saveOtp(phone, otp, expiresAtMs) {
+    await run(
+      'INSERT INTO otps (phone, otp, expires_at) VALUES (?, ?, ?) ON CONFLICT(phone) DO UPDATE SET otp = excluded.otp, expires_at = excluded.expires_at',
+      [phone, otp, expiresAtMs]
+    );
+  }
+
+  async verifyOtp(phone, otp) {
+    const row = await get('SELECT * FROM otps WHERE phone = ?', [phone]);
+    if (!row) return false;
+    if (Date.now() > row.expires_at) {
+      await run('DELETE FROM otps WHERE phone = ?', [phone]);
+      return false;
+    }
+    const match = String(row.otp).trim() === String(otp).trim();
+    if (match) {
+      await run('DELETE FROM otps WHERE phone = ?', [phone]);
+    }
+    return match;
   }
 
   async getUsers() {
-    return all('SELECT id, name, email, role, created_at FROM users ORDER BY id');
+    return all('SELECT id, name, email, phone, role, created_at FROM users ORDER BY id');
   }
 
   async getSettings() {

@@ -98,19 +98,59 @@ class StorageEngine {
 
   // --- Users & Auth ---
   findUserByEmail(email) {
-    return this.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!email) return null;
+    return this.data.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+  }
+
+  findUserByPhone(phone) {
+    if (!phone) return null;
+    return this.data.users.find(u => u.phone === phone);
+  }
+
+  findUserByIdentifier(identifier) {
+    if (!identifier) return null;
+    const val = String(identifier).trim();
+    return this.data.users.find(u => u.phone === val || (u.email && u.email.toLowerCase() === val.toLowerCase()));
   }
 
   findUserById(id) {
     return this.data.users.find(u => u.id === id);
   }
 
-  createUser(name, email, passwordHash, role = 'staff') {
+  createUser(name, email, passwordHash, role = 'staff', phone = null) {
     const id = this.data.seq.users++;
-    const user = { id, name, email: email.toLowerCase(), password_hash: passwordHash, role, created_at: new Date().toISOString() };
+    const user = { id, name, email: email ? email.toLowerCase() : null, phone, password_hash: passwordHash || '', role, created_at: new Date().toISOString() };
     this.data.users.push(user);
     this.save();
     return user;
+  }
+
+  createUserWithPhone(name, phone, role = 'staff', email = null) {
+    const id = this.data.seq.users++;
+    const user = { id, name, phone, email: email ? email.toLowerCase() : null, password_hash: '', role, created_at: new Date().toISOString() };
+    this.data.users.push(user);
+    this.save();
+    return user;
+  }
+
+  saveOtp(phone, otp, expiresAtMs) {
+    this.otps = this.otps || {};
+    this.otps[phone] = { otp, expiresAt: expiresAtMs };
+  }
+
+  verifyOtp(phone, otp) {
+    this.otps = this.otps || {};
+    const item = this.otps[phone];
+    if (!item) return false;
+    if (Date.now() > item.expiresAt) {
+      delete this.otps[phone];
+      return false;
+    }
+    const match = String(item.otp).trim() === String(otp).trim();
+    if (match) {
+      delete this.otps[phone];
+    }
+    return match;
   }
 
   getUsers() {
