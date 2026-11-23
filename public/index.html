@@ -230,57 +230,70 @@
 
   <!-- 3. HARVEST VIEW -->
   <section class="view" id="view-harvest" hidden>
-    <section class="stats" id="h-stats" aria-label="Harvest summary"></section>
     <div class="bar">
-      <button class="btn primary" id="btn-log-harvest">Log harvest</button>
+      <div class="chips" id="h-subtabs" role="group" aria-label="Harvest section pages">
+        <button type="button" class="chip" id="btn-hsub-lots" data-hsub="lots" aria-pressed="true">📦 Harvest Lots <span class="c" id="h-lots-cnt">0</span></button>
+        <button type="button" class="chip" id="btn-hsub-profit" data-hsub="profit" aria-pressed="false">💰 Profit by Batch <span class="c" id="h-profit-cnt">0</span></button>
+      </div>
       <span class="spacer"></span>
+      <button class="btn primary" id="btn-log-harvest">Log harvest</button>
       <button class="btn small" id="exp-harvest">Export CSV</button>
     </div>
-    <p class="hint" id="h-hint"></p>
-    <div class="tablewrap" id="h-wrap" hidden>
-      <table class="t">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Boxes</th>
-            <th class="r">Weight (kg)</th>
-            <th>Size</th>
-            <th class="r">&#8377;/kg</th>
-            <th class="r">Revenue</th>
-            <th>Buyer</th>
-            <th>Documents</th>
-          </tr>
-        </thead>
-        <tbody id="h-body"></tbody>
-        <tfoot id="h-foot"></tfoot>
-      </table>
-    </div>
-    <section id="h-profit-wrap" hidden>
-      <div class="bar" style="margin-bottom:0">
-        <h3 class="sec" style="margin:0">Profit by batch number</h3>
-        <span class="spacer"></span>
-        <span id="h-profit-info" style="font-size:13px;color:var(--muted)"></span>
-      </div>
-      <div class="tablewrap">
-        <table class="t" style="min-width:640px">
+
+    <!-- Page 1: Harvest Lots -->
+    <div id="h-page-lots">
+      <section class="stats" id="h-stats" aria-label="Harvest summary"></section>
+      <p class="hint" id="h-hint"></p>
+      <div class="tablewrap" id="h-wrap" hidden>
+        <table class="t">
           <thead>
             <tr>
-              <th>Batch no.</th>
-              <th>Harvested</th>
-              <th>Box</th>
+              <th>Date</th>
+              <th>Boxes</th>
               <th class="r">Weight (kg)</th>
-              <th class="r">Buying price</th>
-              <th class="r">Selling price</th>
-              <th class="r">Profit</th>
+              <th>Size</th>
+              <th class="r">&#8377;/kg</th>
+              <th class="r">Revenue</th>
+              <th>Buyer</th>
+              <th>Documents</th>
             </tr>
           </thead>
-          <tbody id="h-profit"></tbody>
-          <tfoot id="h-pfoot"></tfoot>
+          <tbody id="h-body"></tbody>
+          <tfoot id="h-foot"></tfoot>
         </table>
       </div>
-      <div class="pager" id="h-profit-pager"></div>
-      <p class="hint">Selling price is each crab&#8217;s share of the sale, split by final weight.</p>
-    </section>
+    </div>
+
+    <!-- Page 2: Profit by Batch Number -->
+    <div id="h-page-profit" hidden>
+      <p class="hint" id="h-profit-hint" hidden>No harvested batches with profit data yet. Harvest crabs from boxes to see profit calculations here.</p>
+      <section id="h-profit-wrap">
+        <div class="bar" style="margin-bottom:8px">
+          <h3 class="sec" style="margin:0">Profit by batch number</h3>
+          <span class="spacer"></span>
+          <span id="h-profit-info" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+        <div class="tablewrap">
+          <table class="t" style="min-width:640px">
+            <thead>
+              <tr>
+                <th>Batch no.</th>
+                <th>Harvested</th>
+                <th>Box</th>
+                <th class="r">Weight (kg)</th>
+                <th class="r">Buying price</th>
+                <th class="r">Selling price</th>
+                <th class="r">Profit</th>
+              </tr>
+            </thead>
+            <tbody id="h-profit"></tbody>
+            <tfoot id="h-pfoot"></tfoot>
+          </table>
+        </div>
+        <div class="pager" id="h-profit-pager"></div>
+        <p class="hint">Selling price is each crab&#8217;s share of the sale, split by final weight.</p>
+      </section>
+    </div>
   </section>
 
   <!-- 4. MONITOR VIEW -->

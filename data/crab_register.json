@@ -4,17 +4,17 @@
       "id": 1,
       "name": "Farm Owner",
       "email": "admin@crabfarm.in",
-      "password_hash": "$2a$10$zu338STxZ9.E0t1GEsMWN.aOykUO/79QQ5Hq1JiZh7hMKFuGQ0qJm",
+      "password_hash": "$2a$10$vNLFiRiK8HX2SNFwcs5WPOnzPg.SkFrBitGcDUJnB0WphIGle6vVO",
       "role": "owner",
-      "created_at": "2026-11-23T13:16:26.032Z"
+      "created_at": "2026-11-23T18:49:07.453Z"
     },
     {
       "id": 2,
       "name": "Farm Staff",
       "email": "staff@crabfarm.in",
-      "password_hash": "$2a$10$zu338STxZ9.E0t1GEsMWN.oglPOxtd3Ki3Z48AeSSmeFimqzzJwSC",
+      "password_hash": "$2a$10$vNLFiRiK8HX2SNFwcs5WPO.jHSy8i5P7XbJVAGf1R6IP4cqEu6xge",
       "role": "staff",
-      "created_at": "2026-11-23T13:16:26.037Z"
+      "created_at": "2026-11-23T18:49:07.456Z"
     }
   ],
   "settings": {

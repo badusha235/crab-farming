@@ -50,6 +50,7 @@
     hFiles: [],
     hUploaded: [],
     saving: false,
+    hSubTab: 'lots',     // Harvest sub-tab: 'lots' or 'profit'
     profitPage: 1,       // current page for profit table
     profitPageSize: 20   // rows per page
   };
@@ -1247,6 +1248,25 @@
     renderHarvestStats();
     renderProfitTable();
 
+    var curSub = S.hSubTab || 'lots';
+
+    // Update subtab chips and counts
+    var lotsCount = (S.harvests || []).length;
+    var profitCount = (S.profits || []).length;
+    if ($('#h-lots-cnt')) $('#h-lots-cnt').textContent = lotsCount;
+    if ($('#h-profit-cnt')) $('#h-profit-cnt').textContent = profitCount;
+
+    if ($('#btn-hsub-lots')) $('#btn-hsub-lots').setAttribute('aria-pressed', curSub === 'lots' ? 'true' : 'false');
+    if ($('#btn-hsub-profit')) $('#btn-hsub-profit').setAttribute('aria-pressed', curSub === 'profit' ? 'true' : 'false');
+
+    // Toggle subpage containers
+    if ($('#h-page-lots')) $('#h-page-lots').hidden = (curSub !== 'lots');
+    if ($('#h-page-profit')) $('#h-page-profit').hidden = (curSub !== 'profit');
+
+    // Controls visibility based on active subpage
+    if ($('#btn-log-harvest')) $('#btn-log-harvest').style.display = (curSub === 'lots') ? '' : 'none';
+    if ($('#exp-harvest')) $('#exp-harvest').textContent = (curSub === 'profit') ? 'Export Profit CSV' : 'Export Lots CSV';
+
     var list = S.harvests || [];
     $('#h-hint').textContent = (list.length === 0)
       ? 'No harvests logged yet. Put a box in Harvest status, then tap Log harvest.'
@@ -1311,6 +1331,7 @@
   function renderProfitTable() {
     var allRows = (S.profits || []).slice(); // already latest-first from API
     var total = allRows.length;
+    if ($('#h-profit-cnt')) $('#h-profit-cnt').textContent = total;
     var pageSize = S.profitPageSize;
     var totalPages = Math.max(1, Math.ceil(total / pageSize));
     // clamp page
@@ -1322,6 +1343,7 @@
     var rows = allRows.slice(start, start + pageSize);
 
     $('#h-profit-wrap').hidden = (total === 0);
+    if ($('#h-profit-hint')) $('#h-profit-hint').hidden = (total > 0);
     var body = $('#h-profit'); body.textContent = '';
     var foot = $('#h-pfoot'); foot.textContent = '';
 
@@ -2373,11 +2395,22 @@
     $('#cr-del').addEventListener('click', deleteCrab);
 
     // Harvest View
+    $('#btn-hsub-lots').addEventListener('click', function () {
+      S.hSubTab = 'lots';
+      renderHarvestTable();
+    });
+    $('#btn-hsub-profit').addEventListener('click', function () {
+      S.hSubTab = 'profit';
+      renderHarvestTable();
+    });
+
     $('#btn-log-harvest').addEventListener('click', function () { openHarvestModal(null); });
     $('#h-cancel').addEventListener('click', function () { $('#harvest-modal').hidden = true; });
     $('#h-save').addEventListener('click', saveHarvest);
     $('#h-del').addEventListener('click', deleteHarvest);
-    $('#exp-harvest').addEventListener('click', function () { triggerExport('harvest'); });
+    $('#exp-harvest').addEventListener('click', function () {
+      triggerExport(S.hSubTab === 'profit' ? 'profit' : 'harvest');
+    });
 
     $('#h-grade').addEventListener('change', function () {
       if (S.hEditId) return;
