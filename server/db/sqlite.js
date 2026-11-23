@@ -755,6 +755,13 @@ class SQLiteAdapter {
     const from = parseInt(fromBoxNo, 10);
     const to = parseInt(toBoxNo, 10);
 
+    if (isNaN(from) || isNaN(to) || to < 1 || to > 500) {
+      throw new Error('Target box number must be between 1 and 500');
+    }
+    if (from === to) {
+      throw new Error('Target box is the same as current box');
+    }
+
     await exec('BEGIN TRANSACTION');
     try {
       const sourceBox = await get('SELECT * FROM boxes WHERE box_no = ?', [from]);
@@ -763,22 +770,28 @@ class SQLiteAdapter {
       const targetBox = await get('SELECT box_no FROM boxes WHERE box_no = ?', [to]);
       if (targetBox) throw new Error(`Target box ${to} already has a crab`);
 
-      await run(
-        `INSERT INTO boxes (box_no, status, size, species, sex, batch_no, cost, source, stock_date, initial_weight_g, end_date, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [to, sourceBox.status, sourceBox.size, sourceBox.species, sourceBox.sex, sourceBox.batch_no, sourceBox.cost, sourceBox.source, sourceBox.stock_date, sourceBox.initial_weight_g, sourceBox.end_date, sourceBox.notes]
-      );
+      // 1. Update the box number directly on the boxes table so batch_no is never duplicated
+      await run('UPDATE boxes SET box_no = ? WHERE box_no = ?', [to, from]);
 
+      // 2. Ensure related tables point to target box (if not cascaded automatically)
       await run('UPDATE box_weights SET box_no = ? WHERE box_no = ?', [to, from]);
       await run('UPDATE box_moults SET box_no = ? WHERE box_no = ?', [to, from]);
       await run('UPDATE box_moves SET box_no = ? WHERE box_no = ?', [to, from]);
 
+      // 3. Record this move
+      const todayDate = new Date().toISOString().slice(0, 10);
       await run(
         'INSERT INTO box_moves (box_no, from_box, to_box, moved_on) VALUES (?, ?, ?, ?)',
-        [to, from, to, new Date().toISOString().slice(0, 10)]
+        [to, from, to, todayDate]
       );
 
-      await run('DELETE FROM boxes WHERE box_no = ?', [from]);
+      // 4. Update inventory_crabs reference if this crab originated from inventory
+      if (sourceBox.batch_no) {
+        await run(
+          'UPDATE inventory_crabs SET moved_to_box = ? WHERE batch_no = ? AND status = "moved"',
+          [to, sourceBox.batch_no]
+        );
+      }
 
       await exec('COMMIT');
       return this.getBox(to);

@@ -122,7 +122,11 @@
       </table>
     </div>
     <section id="h-profit-wrap" hidden>
-      <h3 class="sec">Profit by batch number</h3>
+      <div class="bar" style="margin-bottom:0">
+        <h3 class="sec" style="margin:0">Profit by batch number</h3>
+        <span class="spacer"></span>
+        <span id="h-profit-info" style="font-size:13px;color:var(--muted)"></span>
+      </div>
       <div class="tablewrap">
         <table class="t" style="min-width:640px">
           <thead>
@@ -140,6 +144,7 @@
           <tfoot id="h-pfoot"></tfoot>
         </table>
       </div>
+      <div class="pager" id="h-profit-pager"></div>
       <p class="hint">Selling price is each crab&#8217;s share of the sale, split by final weight.</p>
     </section>
   </section>

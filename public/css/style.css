@@ -369,6 +369,18 @@ table.t { border-collapse: collapse; width: 100%; min-width: 600px; font-variant
 .info summary { cursor: pointer; font-weight: 600; }
 
 /* Toast */
+/* Pagination */
+.pager {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 4px 0;
+}
+.pager-info { font-size: 13px; color: var(--muted); margin-right: auto; }
+.pager .btn { min-height: 34px; padding: 5px 12px; font-size: 13px; }
+.pager .btn[aria-current="page"] {
+  background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
+}
+.pager .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 30; background: var(--fg); color: var(--surface); padding: 10px 16px; border-radius: 10px;

@@ -485,6 +485,13 @@ class MySQLAdapter {
     const from = parseInt(fromBoxNo, 10);
     const to = parseInt(toBoxNo, 10);
 
+    if (isNaN(from) || isNaN(to) || to < 1 || to > 500) {
+      throw new Error('Target box number must be between 1 and 500');
+    }
+    if (from === to) {
+      throw new Error('Target box is the same as current box');
+    }
+
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
@@ -496,12 +503,7 @@ class MySQLAdapter {
       const [tRows] = await conn.query('SELECT box_no FROM boxes WHERE box_no = ?', [to]);
       if (tRows.length > 0) throw new Error(`Target box ${to} already has a crab`);
 
-      await conn.query(
-        `INSERT INTO boxes (box_no, status, size, species, sex, batch_no, cost, source, stock_date, initial_weight_g, end_date, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [to, sourceBox.status, sourceBox.size, sourceBox.species, sourceBox.sex, sourceBox.batch_no, sourceBox.cost, sourceBox.source, sourceBox.stock_date, sourceBox.initial_weight_g, sourceBox.end_date, sourceBox.notes]
-      );
-
+      await conn.query('UPDATE boxes SET box_no = ? WHERE box_no = ?', [to, from]);
       await conn.query('UPDATE box_weights SET box_no = ? WHERE box_no = ?', [to, from]);
       await conn.query('UPDATE box_moults SET box_no = ? WHERE box_no = ?', [to, from]);
       await conn.query('UPDATE box_moves SET box_no = ? WHERE box_no = ?', [to, from]);
@@ -511,7 +513,12 @@ class MySQLAdapter {
         [to, from, to, new Date().toISOString().slice(0, 10)]
       );
 
-      await conn.query('DELETE FROM boxes WHERE box_no = ?', [from]);
+      if (sourceBox.batch_no) {
+        await conn.query(
+          'UPDATE inventory_crabs SET moved_to_box = ? WHERE batch_no = ? AND status = "moved"',
+          [to, sourceBox.batch_no]
+        );
+      }
 
       await conn.commit();
       return this.getBox(to);

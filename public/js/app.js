@@ -49,7 +49,9 @@
     hWTouched: false,
     hFiles: [],
     hUploaded: [],
-    saving: false
+    saving: false,
+    profitPage: 1,       // current page for profit table
+    profitPageSize: 20   // rows per page
   };
 
   /* ---------- Helpers ---------- */
@@ -1318,8 +1320,19 @@
   }
 
   function renderProfitTable() {
-    var rows = S.profits || [];
-    $('#h-profit-wrap').hidden = (rows.length === 0);
+    var allRows = (S.profits || []).slice(); // already latest-first from API
+    var total = allRows.length;
+    var pageSize = S.profitPageSize;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    // clamp page
+    if (S.profitPage < 1) S.profitPage = 1;
+    if (S.profitPage > totalPages) S.profitPage = totalPages;
+
+    var page = S.profitPage;
+    var start = (page - 1) * pageSize;
+    var rows = allRows.slice(start, start + pageSize);
+
+    $('#h-profit-wrap').hidden = (total === 0);
     var body = $('#h-profit'); body.textContent = '';
     var foot = $('#h-pfoot'); foot.textContent = '';
 
@@ -1330,6 +1343,7 @@
       return cell;
     }
 
+    // Page rows
     var tc = 0, ts = 0, tp = 0, countP = 0;
     rows.forEach(function (r) {
       var tr = document.createElement('tr');
@@ -1353,12 +1367,11 @@
       body.appendChild(tr);
     });
 
+    // Totals footer (page totals)
     if (countP > 0) {
       var f = document.createElement('tr');
-      f.appendChild(td('Total'));
-      f.appendChild(td(''));
-      f.appendChild(td(''));
-      f.appendChild(td(''));
+      f.appendChild(td('Page total'));
+      f.appendChild(td('')); f.appendChild(td('')); f.appendChild(td(''));
       f.appendChild(td(fmtMoney(tc), 'r'));
       f.appendChild(td(fmtMoney(ts), 'r'));
       var totP = td((tp < 0 ? '-' : '') + fmtMoney(Math.abs(tp)), 'r');
@@ -1366,6 +1379,87 @@
       f.appendChild(totP);
       foot.appendChild(f);
     }
+
+    // ---- Pager ----
+    var pager = $('#h-profit-pager');
+    pager.textContent = '';
+    if (total === 0) return;
+
+    // Info label
+    var infoEl = document.getElementById('h-profit-info');
+    if (infoEl) {
+      var rangeStart = start + 1;
+      var rangeEnd = Math.min(start + pageSize, total);
+      infoEl.textContent = 'Showing ' + rangeStart + '–' + rangeEnd + ' of ' + total;
+    }
+
+    if (totalPages <= 1) return;
+
+    function mkBtn(label, targetPage, isCurrent, disabled) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn small';
+      btn.textContent = label;
+      if (isCurrent) btn.setAttribute('aria-current', 'page');
+      if (disabled) btn.disabled = true;
+      if (!disabled && !isCurrent) {
+        btn.addEventListener('click', function () {
+          S.profitPage = targetPage;
+          renderProfitTable();
+        });
+      }
+      return btn;
+    }
+
+    // Prev button
+    pager.appendChild(mkBtn('‹ Prev', page - 1, false, page === 1));
+
+    // Page number buttons — show up to 7, with ellipsis
+    var pages = [];
+    if (totalPages <= 7) {
+      for (var i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages = [1];
+      if (page > 3) pages.push('…');
+      for (var j = Math.max(2, page - 1); j <= Math.min(totalPages - 1, page + 1); j++) pages.push(j);
+      if (page < totalPages - 2) pages.push('…');
+      pages.push(totalPages);
+    }
+
+    pages.forEach(function (p) {
+      if (p === '…') {
+        var sep = document.createElement('span');
+        sep.textContent = '…';
+        sep.style.cssText = 'padding:0 4px;color:var(--muted);align-self:center';
+        pager.appendChild(sep);
+      } else {
+        pager.appendChild(mkBtn(String(p), p, p === page, false));
+      }
+    });
+
+    // Next button
+    pager.appendChild(mkBtn('Next ›', page + 1, false, page === totalPages));
+
+    // Rows-per-page selector
+    var sep2 = document.createElement('span');
+    sep2.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)';
+    sep2.textContent = 'Rows:';
+    var sel = document.createElement('select');
+    sel.style.cssText = 'font-size:13px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface)';
+    [10, 20, 50, 100].forEach(function (n) {
+      var opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      if (n === S.profitPageSize) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function () {
+      S.profitPageSize = parseInt(this.value, 10);
+      S.profitPage = 1;
+      renderProfitTable();
+    });
+    sep2.appendChild(sel);
+    pager.appendChild(sep2);
   }
 
   function getEligibleHarvestBoxes() {
@@ -2002,6 +2096,7 @@
       S.deliveries = dels || [];
       S.harvests = harvests || [];
       S.profits = profits || [];
+      S.profitPage = 1; // reset to first page on fresh data load
       S.readings = readings || [];
 
       window.CrabApi.notifyStatus('synced');
