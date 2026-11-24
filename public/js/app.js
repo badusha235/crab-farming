@@ -2095,6 +2095,169 @@
     return bad;
   }
 
+  // Helper to build semi-circular gauge meters
+  function buildGaugeSvg(val, min, max, safeMin, safeMax, color) {
+    var width = 120, height = 70;
+    var cx = 60, cy = 60, r = 46;
+    var stroke = 9;
+    
+    // Clamp fraction between 0 and 1
+    var frac = (val - min) / (max - min);
+    if (isNaN(frac)) frac = 0.5;
+    frac = Math.max(0, Math.min(1, frac));
+
+    // Semi-circle arc: from angle -180 deg (left) to 0 deg (right)
+    // Circumference of semi-circle = PI * r
+    var arcLen = Math.PI * r;
+    var offset = arcLen * (1 - frac);
+
+    // Needle angle from -180deg to 0deg (or in rad)
+    var angleDeg = -180 + (frac * 180);
+    var rad = (angleDeg * Math.PI) / 180;
+    var needleLen = r - 6;
+    var nx = cx + needleLen * Math.cos(rad);
+    var ny = cy + needleLen * Math.sin(rad);
+
+    var safeColor = color || '#0ea5e9';
+    var bgTrack = 'rgba(148, 163, 184, 0.2)';
+
+    return '<svg class="gauge-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMidYMid meet">' +
+      // Background track
+      '<path d="M ' + (cx - r) + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + cy + '" fill="none" stroke="' + bgTrack + '" stroke-width="' + stroke + '" stroke-linecap="round"/>' +
+      // Value arc
+      '<path d="M ' + (cx - r) + ' ' + cy + ' A ' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + cy + '" fill="none" stroke="' + safeColor + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + arcLen + '" stroke-dashoffset="' + offset + '" style="transition: stroke-dashoffset 0.6s ease;"/>' +
+      // Needle line
+      '<line x1="' + cx + '" y1="' + cy + '" x2="' + nx + '" y2="' + ny + '" stroke="#334155" stroke-width="2.5" stroke-linecap="round"/>' +
+      // Needle center pivot
+      '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="#334155"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="2" fill="#ffffff"/>' +
+    '</svg>';
+  }
+
+  function renderMonitorMeters(all, locs) {
+    var container = $('#monitor-meters-grid');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // Pick latest reading for primary sensors or fallback to realistic aquaculture dummies
+    var latestTemp = null, latestPh = null;
+    if (locs && locs.length) {
+      var pts = all[locs[0]];
+      if (pts && pts.length) {
+        var last = pts[pts.length - 1];
+        if (last.temp !== null) latestTemp = last.temp;
+        if (last.ph !== null) latestPh = last.ph;
+      }
+    }
+    // If not in database or dummy requested, fallback to default ideal values
+    var valTemp = latestTemp !== null ? latestTemp : 28.5;
+    var valPh = latestPh !== null ? latestPh : 7.85;
+
+    // Additional aquaculture parameters with realistic dummy readings
+    var meters = [
+      {
+        title: 'Water Temp',
+        icon: '🌡️',
+        val: valTemp,
+        unit: '°C',
+        min: 15,
+        max: 40,
+        safeMin: S.settings.temp_min || 26,
+        safeMax: S.settings.temp_max || 32,
+        color: '#0284c7',
+        status: (valTemp >= (S.settings.temp_min || 26) && valTemp <= (S.settings.temp_max || 32)) ? 'Optimal' : (valTemp < 24 || valTemp > 34 ? 'Critical' : 'Attention'),
+        statusClass: (valTemp >= (S.settings.temp_min || 26) && valTemp <= (S.settings.temp_max || 32)) ? 'good' : 'warn'
+      },
+      {
+        title: 'Water pH',
+        icon: '🧪',
+        val: valPh,
+        unit: 'pH',
+        min: 5.0,
+        max: 10.0,
+        safeMin: S.settings.ph_min || 7.5,
+        safeMax: S.settings.ph_max || 8.5,
+        color: '#10b981',
+        status: (valPh >= (S.settings.ph_min || 7.5) && valPh <= (S.settings.ph_max || 8.5)) ? 'Balanced' : 'Out of range',
+        statusClass: (valPh >= (S.settings.ph_min || 7.5) && valPh <= (S.settings.ph_max || 8.5)) ? 'good' : 'alert'
+      },
+      {
+        title: 'Dissolved Oxygen',
+        icon: '🫧',
+        val: 6.4,
+        unit: 'mg/L',
+        min: 0,
+        max: 12,
+        safeMin: 5.0,
+        safeMax: 9.0,
+        color: '#3b82f6',
+        status: 'Healthy (DO > 5.0)',
+        statusClass: 'good'
+      },
+      {
+        title: 'Salinity',
+        icon: '🧂',
+        val: 24.5,
+        unit: 'ppt',
+        min: 0,
+        max: 40,
+        safeMin: 18,
+        safeMax: 30,
+        color: '#8b5cf6',
+        status: 'Optimal Brackish',
+        statusClass: 'good'
+      },
+      {
+        title: 'Ammonia (NH₃)',
+        icon: '⚠️',
+        val: 0.08,
+        unit: 'mg/L',
+        min: 0,
+        max: 1.0,
+        safeMin: 0,
+        safeMax: 0.2,
+        color: '#10b981',
+        status: 'Safe Level',
+        statusClass: 'good'
+      },
+      {
+        title: 'Water Circulation',
+        icon: '🌊',
+        val: 1450,
+        unit: 'L/h',
+        min: 500,
+        max: 2500,
+        safeMin: 1200,
+        safeMax: 2000,
+        color: '#06b6d4',
+        status: 'Normal Flow',
+        statusClass: 'good'
+      }
+    ];
+
+    meters.forEach(function (m) {
+      var card = document.createElement('div');
+      card.className = 'meter-card';
+
+      var formattedVal = typeof m.val === 'number' ? (m.val % 1 === 0 ? m.val : m.val.toFixed(m.val < 1 ? 2 : 1)) : m.val;
+
+      card.innerHTML = 
+        '<div class="meter-title">' + m.icon + ' ' + m.title + '</div>' +
+        '<div class="meter-sub">Range ' + m.safeMin + '–' + m.safeMax + ' ' + (m.unit || '') + '</div>' +
+        '<div class="gauge-svg-wrap">' +
+          buildGaugeSvg(m.val, m.min, m.max, m.safeMin, m.safeMax, m.color) +
+        '</div>' +
+        '<div class="gauge-bounds">' +
+          '<span>' + m.min + '</span>' +
+          '<span>' + m.max + ' ' + m.unit + '</span>' +
+        '</div>' +
+        '<div class="gauge-val-display">' + formattedVal + ' <small>' + m.unit + '</small></div>' +
+        '<div class="gauge-status ' + m.statusClass + '">' + m.status + '</div>';
+
+      container.appendChild(card);
+    });
+  }
+
   function renderMonitor() {
     var all = groupReadingsBySensor();
     var locs = Object.keys(all).sort();
@@ -2105,21 +2268,27 @@
 
     if (S.tab !== 'monitor') return;
 
-    // Range chips
-    var hostChips = $('#range-chips'); hostChips.textContent = '';
-    RANGES.forEach(function (r) {
-      var btn = document.createElement('button');
-      btn.type = 'button'; btn.className = 'chip'; btn.textContent = r[0];
-      btn.setAttribute('aria-pressed', S.range === r[1] ? 'true' : 'false');
-      btn.addEventListener('click', function () {
-        S.range = r[1];
-        renderMonitor();
+    // Range chips (if present)
+    var hostChips = $('#range-chips');
+    if (hostChips) {
+      hostChips.textContent = '';
+      RANGES.forEach(function (r) {
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'chip'; btn.textContent = r[0];
+        btn.setAttribute('aria-pressed', S.range === r[1] ? 'true' : 'false');
+        btn.addEventListener('click', function () {
+          S.range = r[1];
+          renderMonitor();
+        });
+        hostChips.appendChild(btn);
       });
-      hostChips.appendChild(btn);
-    });
+    }
 
-    $('#t-range').textContent = 'Safe ' + S.settings.temp_min + '–' + S.settings.temp_max + ' °C';
-    $('#p-range').textContent = 'Safe ' + S.settings.ph_min + '–' + S.settings.ph_max;
+    if ($('#t-range')) $('#t-range').textContent = 'Safe ' + S.settings.temp_min + '–' + S.settings.temp_max + ' °C';
+    if ($('#p-range')) $('#p-range').textContent = 'Safe ' + S.settings.ph_min + '–' + S.settings.ph_max;
+
+    // Render Aquaculture Telemetry Gauges / Meters
+    renderMonitorMeters(all, locs);
 
     var sHost = $('#sensors'); sHost.textContent = '';
     locs.forEach(function (loc) {
@@ -2750,13 +2919,13 @@
     });
 
     // Monitor View
-    $('#btn-add-reading').addEventListener('click', openReadingModal);
-    $('#r-cancel').addEventListener('click', function () { $('#reading-modal').hidden = true; });
-    $('#r-save').addEventListener('click', saveReading);
-    $('#btn-import').addEventListener('click', function () { $('#file-import').click(); });
-    $('#exp-readings').addEventListener('click', function () { triggerExport('readings'); });
+    if ($('#btn-add-reading')) $('#btn-add-reading').addEventListener('click', openReadingModal);
+    if ($('#r-cancel')) $('#r-cancel').addEventListener('click', function () { $('#reading-modal').hidden = true; });
+    if ($('#r-save')) $('#r-save').addEventListener('click', saveReading);
+    if ($('#btn-import')) $('#btn-import').addEventListener('click', function () { $('#file-import').click(); });
+    if ($('#exp-readings')) $('#exp-readings').addEventListener('click', function () { triggerExport('readings'); });
 
-    $('#file-import').addEventListener('change', function (e) {
+    if ($('#file-import')) $('#file-import').addEventListener('change', function (e) {
       var f = e.target.files && e.target.files[0];
       e.target.value = '';
       if (!f) return;

@@ -218,15 +218,20 @@
 
   <!-- 4. MONITOR VIEW -->
   <section class="view" id="view-monitor" hidden>
-    <div class="bar">
-      <div class="chips" id="range-chips" role="group" aria-label="Time range"></div>
-      <span class="spacer"></span>
-      <button class="btn primary" id="btn-add-reading">Add reading</button>
-      <button class="btn small" id="btn-import">Import CSV</button>
-      <button class="btn small" id="exp-readings">Export CSV</button>
-      <input type="file" id="file-import" accept=".csv,text/csv,text/plain" hidden>
+    <!-- LIVE TELEMETRY GAUGES / METERS -->
+    <div class="meters-section" id="meters-section">
+      <div class="meters-header">
+        <div>
+          <h2 style="margin:0;font-size:18px;font-weight:700">Live Aquaculture Gauges</h2>
+          <p class="muted" style="margin:2px 0 0;font-size:13px">Real-time water quality meters & telemetry indicators</p>
+        </div>
+        <div class="meters-badge"><span class="live-dot"></span> LIVE TELEMETRY</div>
+      </div>
+      <div class="meters-grid" id="monitor-meters-grid">
+        <!-- Rendered dynamically by app.js -->
+      </div>
     </div>
-    <p class="hint" id="m-hint"></p>
+
     <div class="sensors" id="sensors"></div>
     <div class="charts">
       <div class="chartbox">
