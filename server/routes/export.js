@@ -94,6 +94,45 @@ router.get('/inventory', async (req, res) => {
   }
 });
 
+// GET /api/export/deliveries
+router.get('/deliveries', async (req, res) => {
+  try {
+    const deliveries = await db.getDeliveries();
+    const allCrabs = await db.getInventoryCrabs('all');
+    const todayDate = new Date().toISOString().slice(0, 10);
+    const rows = [
+      ['Received', 'Seller', 'Crabs', 'Weight (kg)', 'Cost (INR)', 'In stock', 'Moved', 'Notes']
+    ];
+
+    deliveries.forEach(d => {
+      const crabsInDel = allCrabs.filter(c => c.delivery_id === d.id);
+      let wSum = 0, costSum = 0, inStock = 0, moved = 0, hasCost = false;
+      crabsInDel.forEach(c => {
+        wSum += (c.weight_g || 0);
+        if (typeof c.price === 'number') { costSum += c.price; hasCost = true; }
+        if (c.status === 'stock') inStock++; else moved++;
+      });
+
+      rows.push([
+        d.received_date || '',
+        d.seller || '',
+        crabsInDel.length,
+        (wSum / 1000).toFixed(3),
+        hasCost ? costSum : '',
+        inStock,
+        moved,
+        d.notes || ''
+      ]);
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="crab-deliveries-${todayDate}.csv"`);
+    res.send(toCsv(rows));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/export/harvest
 router.get('/harvest', async (req, res) => {
   try {

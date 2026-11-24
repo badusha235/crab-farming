@@ -91,7 +91,7 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .tabs a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
 .tabs .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--d-dot); }
 
-.view { display: flex; flex-direction: column; gap: 16px; }
+.view, .subpage { display: flex; flex-direction: column; gap: 16px; }
 
 /* Buttons */
 .btn {

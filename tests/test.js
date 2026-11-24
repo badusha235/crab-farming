@@ -15,7 +15,7 @@ const { app, startServer } = require('../server/app');
 async function runTests() {
   console.log('--- Starting Crab Box Register Acceptance Tests ---');
 
-  const server = await startServer();
+  const server = await startServer(0);
   const address = server.address();
   const port = address.port;
   const baseUrl = `http://localhost:${port}`;

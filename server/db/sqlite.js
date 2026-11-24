@@ -635,12 +635,48 @@ class SQLiteAdapter {
   async removeInventoryCrab(id) {
     const crab = await get('SELECT * FROM inventory_crabs WHERE id = ?', [id]);
     if (!crab) throw new Error('Crab not found');
-    if (crab.status === 'moved') throw new Error('Moved crabs cannot be removed from inventory');
+
+    if (crab.status === 'moved') {
+      const activeBox = await get('SELECT box_no FROM boxes WHERE batch_no = ? AND status IN ("growing", "molting")', [crab.batch_no]);
+      if (activeBox) {
+        throw new Error(`Cannot delete crab ${crab.batch_no}: it is currently active in Box ${activeBox.box_no}. Please clear or harvest the box first.`);
+      }
+    }
 
     await exec('BEGIN TRANSACTION');
     try {
       await run('DELETE FROM batch_numbers_in_use WHERE batch_no = ?', [crab.batch_no]);
       await run('DELETE FROM inventory_crabs WHERE id = ?', [id]);
+      await exec('COMMIT');
+      return { success: true };
+    } catch (err) {
+      await exec('ROLLBACK');
+      throw err;
+    }
+  }
+
+  async removeDelivery(id) {
+    const delivery = await get('SELECT * FROM deliveries WHERE id = ?', [id]);
+    if (!delivery) throw new Error('Delivery not found');
+
+    const crabs = await all('SELECT * FROM inventory_crabs WHERE delivery_id = ?', [id]);
+
+    for (const crab of crabs) {
+      if (crab.status === 'moved') {
+        const activeBox = await get('SELECT box_no FROM boxes WHERE batch_no = ? AND status IN ("growing", "molting")', [crab.batch_no]);
+        if (activeBox) {
+          throw new Error(`Cannot delete delivery: Crab ${crab.batch_no} is currently active in Box ${activeBox.box_no}. Please clear or harvest the box first.`);
+        }
+      }
+    }
+
+    await exec('BEGIN TRANSACTION');
+    try {
+      for (const crab of crabs) {
+        await run('DELETE FROM batch_numbers_in_use WHERE batch_no = ?', [crab.batch_no]);
+      }
+      await run('DELETE FROM inventory_crabs WHERE delivery_id = ?', [id]);
+      await run('DELETE FROM deliveries WHERE id = ?', [id]);
       await exec('COMMIT');
       return { success: true };
     } catch (err) {

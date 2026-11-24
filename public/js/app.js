@@ -52,7 +52,12 @@
     saving: false,
     hSubTab: 'lots',     // Harvest sub-tab: 'lots' or 'profit'
     profitPage: 1,       // current page for profit table
-    profitPageSize: 20   // rows per page
+    profitPageSize: 20,  // rows per page
+    iSubTab: 'crabs',    // Inventory sub-tab: 'crabs' or 'deliv'
+    invPage: 1,          // current page for inventory crabs table
+    invPageSize: 20,     // rows per page for inventory crabs table
+    delivPage: 1,        // current page for deliveries table
+    delivPageSize: 20    // rows per page for deliveries table
   };
 
   /* ---------- Helpers ---------- */
@@ -712,6 +717,84 @@
   var MV = { list: [], inputs: {}, bn: {} };
   var crabEditId = null, crabDelArmed = false, crabSexPicker = null;
 
+  /* ---------- Reusable Table Pager ---------- */
+  function buildPager(pagerEl, infoEl, total, page, pageSize, onPageChange, onPageSizeChange) {
+    if (!pagerEl) return;
+    pagerEl.textContent = '';
+    if (infoEl) infoEl.textContent = '';
+    if (total === 0) return;
+
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    var start = (page - 1) * pageSize;
+    var rangeStart = start + 1;
+    var rangeEnd = Math.min(start + pageSize, total);
+
+    if (infoEl) {
+      infoEl.textContent = 'Showing ' + rangeStart + '–' + rangeEnd + ' of ' + total;
+    }
+
+    if (totalPages <= 1 && (!onPageSizeChange || total <= 10)) return;
+
+    function mkBtn(label, targetPage, isCurrent, disabled) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn small';
+      btn.textContent = label;
+      if (isCurrent) btn.setAttribute('aria-current', 'page');
+      if (disabled) btn.disabled = true;
+      if (!disabled && !isCurrent) {
+        btn.addEventListener('click', function () { onPageChange(targetPage); });
+      }
+      return btn;
+    }
+
+    pagerEl.appendChild(mkBtn('‹ Prev', page - 1, false, page <= 1));
+
+    var pages = [];
+    if (totalPages <= 7) {
+      for (var i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages = [1];
+      if (page > 3) pages.push('…');
+      for (var j = Math.max(2, page - 1); j <= Math.min(totalPages - 1, page + 1); j++) pages.push(j);
+      if (page < totalPages - 2) pages.push('…');
+      pages.push(totalPages);
+    }
+
+    pages.forEach(function (p) {
+      if (p === '…') {
+        var sep = document.createElement('span');
+        sep.textContent = '…';
+        sep.style.cssText = 'padding:0 4px;color:var(--muted);align-self:center';
+        pagerEl.appendChild(sep);
+      } else {
+        pagerEl.appendChild(mkBtn(String(p), p, p === page, false));
+      }
+    });
+
+    pagerEl.appendChild(mkBtn('Next ›', page + 1, false, page >= totalPages));
+
+    if (onPageSizeChange) {
+      var sep2 = document.createElement('span');
+      sep2.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)';
+      sep2.textContent = 'Rows:';
+      var sel = document.createElement('select');
+      sel.style.cssText = 'font-size:13px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface)';
+      [10, 20, 50, 100].forEach(function (n) {
+        var opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        if (n === pageSize) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', function () {
+        onPageSizeChange(parseInt(this.value, 10));
+      });
+      sep2.appendChild(sel);
+      pagerEl.appendChild(sep2);
+    }
+  }
+
   function renderInventoryStats() {
     var list = S.inventory || [];
     var stock = list.filter(function (c) { return c.status === 'stock'; });
@@ -771,12 +854,22 @@
     var totalSel = Object.keys(S.iSel).length;
 
     var btnMove = $('#btn-move');
-    btnMove.disabled = (totalSel === 0);
-    btnMove.textContent = totalSel ? 'Move to boxes (' + totalSel + ')' : 'Move to boxes';
+    if (btnMove) {
+      btnMove.disabled = (totalSel === 0);
+      btnMove.textContent = totalSel ? 'Move to boxes (' + totalSel + ')' : 'Move to boxes';
+    }
+
+    var btnDel = $('#btn-del-selected-inv');
+    if (btnDel) {
+      btnDel.style.display = (S.iSubTab === 'crabs' && totalSel > 0) ? '' : 'none';
+      btnDel.textContent = 'Delete selected (' + totalSel + ')';
+    }
 
     var tickAll = $('#i-all');
-    tickAll.checked = vis.length > 0 && selCount === vis.length;
-    tickAll.indeterminate = selCount > 0 && selCount < vis.length;
+    if (tickAll) {
+      tickAll.checked = vis.length > 0 && selCount === vis.length;
+      tickAll.indeterminate = selCount > 0 && selCount < vis.length;
+    }
   }
 
   function selectAllVisibleInventory(checked) {
@@ -791,7 +884,35 @@
 
   function renderInventoryTable() {
     renderInventoryStats();
+    renderDeliveriesTable();
+
+    var curSub = S.iSubTab || 'crabs';
+    var crabsCount = (S.inventory || []).length;
+    var delivCount = (S.deliveries || []).length;
+    if ($('#i-crabs-cnt')) $('#i-crabs-cnt').textContent = crabsCount;
+    if ($('#i-deliv-cnt')) $('#i-deliv-cnt').textContent = delivCount;
+
+    if ($('#btn-isub-crabs')) $('#btn-isub-crabs').setAttribute('aria-pressed', curSub === 'crabs' ? 'true' : 'false');
+    if ($('#btn-isub-deliv')) $('#btn-isub-deliv').setAttribute('aria-pressed', curSub === 'deliv' ? 'true' : 'false');
+
+    if ($('#i-page-crabs')) $('#i-page-crabs').hidden = (curSub !== 'crabs');
+    if ($('#i-page-deliv')) $('#i-page-deliv').hidden = (curSub !== 'deliv');
+
+    // Controls visibility based on active subpage
+    if ($('#btn-move')) $('#btn-move').style.display = (curSub === 'crabs') ? '' : 'none';
+    if ($('#exp-inv')) $('#exp-inv').textContent = (curSub === 'deliv') ? 'Export Deliveries CSV' : 'Export Crabs CSV';
+
     var vis = getVisibleInventory();
+    var total = vis.length;
+    var pageSize = S.invPageSize || 20;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (S.invPage < 1) S.invPage = 1;
+    if (S.invPage > totalPages) S.invPage = totalPages;
+
+    var page = S.invPage;
+    var start = (page - 1) * pageSize;
+    var pageRows = vis.slice(start, start + pageSize);
+
     var host = $('#i-body'); host.textContent = '';
 
     $('#i-hint').textContent = (S.inventory.length === 0)
@@ -806,7 +927,7 @@
       return cell;
     }
 
-    vis.forEach(function (c) {
+    pageRows.forEach(function (c) {
       var tr = document.createElement('tr');
       var tdTick = document.createElement('td');
 
@@ -847,16 +968,70 @@
       tr.appendChild(td(fmtDate(c.date || c.moved_date)));
       tr.appendChild(td(c.status === 'stock' ? 'In stock' : '→ Box ' + c.moved_to_box));
 
+      // Action column (Delete crab)
+      var tdAct = document.createElement('td');
+      tdAct.style.textAlign = 'center';
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn danger ghost small';
+      delBtn.style.padding = '2px 8px';
+      delBtn.style.fontSize = '12px';
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete crab ' + c.batch_no;
+      delBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete crab ' + c.batch_no + ' from inventory?')) return;
+        try {
+          await window.CrabApi.removeInventoryCrab(c.id);
+          delete S.iSel[c.id];
+          await loadData();
+          renderInventoryTable();
+          toast('Crab ' + c.batch_no + ' deleted');
+        } catch (err) {
+          toast(err.message);
+        }
+      });
+      tdAct.appendChild(delBtn);
+      tr.appendChild(tdAct);
+
       host.appendChild(tr);
     });
 
     updateInventoryActions();
-    renderDeliveriesTable();
+
+    // Pager for Inventory Crabs
+    buildPager(
+      $('#i-crabs-pager'),
+      $('#i-crabs-info'),
+      total,
+      page,
+      pageSize,
+      function (newPage) {
+        S.invPage = newPage;
+        renderInventoryTable();
+      },
+      function (newSize) {
+        S.invPageSize = newSize;
+        S.invPage = 1;
+        renderInventoryTable();
+      }
+    );
   }
 
   function renderDeliveriesTable() {
-    var dels = S.deliveries || [];
-    $('#i-deliv-wrap').hidden = (dels.length === 0);
+    var dels = (S.deliveries || []).slice(); // already latest-first
+    var total = dels.length;
+    var pageSize = S.delivPageSize || 20;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (S.delivPage < 1) S.delivPage = 1;
+    if (S.delivPage > totalPages) S.delivPage = totalPages;
+
+    var page = S.delivPage;
+    var start = (page - 1) * pageSize;
+    var pageRows = dels.slice(start, start + pageSize);
+
+    if ($('#i-deliv-wrap')) $('#i-deliv-wrap').hidden = (total === 0);
+    if ($('#i-deliv-hint')) $('#i-deliv-hint').hidden = (total > 0);
     var host = $('#i-deliv'); host.textContent = '';
 
     function td(text, cls) {
@@ -866,7 +1041,7 @@
       return cell;
     }
 
-    dels.forEach(function (d) {
+    pageRows.forEach(function (d) {
       // aggregate from inventory
       var crabsInDel = (S.inventory || []).filter(function (c) { return c.delivery_id === d.id; });
       var wSum = 0, costSum = 0, inStock = 0, moved = 0, hasCost = false;
@@ -884,8 +1059,56 @@
       tr.appendChild(td(hasCost ? fmtMoney(costSum) : '–', 'r'));
       tr.appendChild(td(String(inStock), 'r'));
       tr.appendChild(td(String(moved), 'r'));
+
+      // Action column (Delete delivery)
+      var tdAct = document.createElement('td');
+      tdAct.style.textAlign = 'center';
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn danger ghost small';
+      delBtn.style.padding = '2px 8px';
+      delBtn.style.fontSize = '12px';
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete delivery from ' + (d.seller || 'seller');
+      delBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        var msg = 'Are you sure you want to delete delivery from ' + (d.seller || 'seller') + ' on ' + fmtDate(d.received_date) + '?';
+        if (crabsInDel.length > 0) {
+          msg += '\n\nThis will remove ' + crabsInDel.length + ' associated crab(s).';
+        }
+        if (!confirm(msg)) return;
+        try {
+          await window.CrabApi.removeDelivery(d.id);
+          await loadData();
+          renderInventoryTable();
+          toast('Delivery deleted');
+        } catch (err) {
+          toast(err.message);
+        }
+      });
+      tdAct.appendChild(delBtn);
+      tr.appendChild(tdAct);
+
       host.appendChild(tr);
     });
+
+    // Pager for Deliveries
+    buildPager(
+      $('#i-deliv-pager'),
+      $('#i-deliv-info'),
+      total,
+      page,
+      pageSize,
+      function (newPage) {
+        S.delivPage = newPage;
+        renderDeliveriesTable();
+      },
+      function (newSize) {
+        S.delivPageSize = newSize;
+        S.delivPage = 1;
+        renderDeliveriesTable();
+      }
+    );
   }
 
   /* Receive Crabs Modal */
@@ -2364,6 +2587,40 @@
     });
 
     // Inventory View
+    $('#btn-isub-crabs').addEventListener('click', function () {
+      S.iSubTab = 'crabs';
+      renderInventoryTable();
+    });
+    $('#btn-isub-deliv').addEventListener('click', function () {
+      S.iSubTab = 'deliv';
+      renderInventoryTable();
+    });
+
+    $('#btn-del-selected-inv').addEventListener('click', async function () {
+      var ids = Object.keys(S.iSel).filter(function (id) { return S.iSel[id]; });
+      if (ids.length === 0) return;
+      if (!confirm('Are you sure you want to delete ' + ids.length + ' selected crab(s) from inventory?')) return;
+
+      var deletedCount = 0;
+      var failedCount = 0;
+      for (var i = 0; i < ids.length; i++) {
+        try {
+          await window.CrabApi.removeInventoryCrab(parseInt(ids[i], 10));
+          deletedCount++;
+        } catch (e) {
+          failedCount++;
+        }
+      }
+      S.iSel = {};
+      await loadData();
+      renderInventoryTable();
+      if (failedCount > 0) {
+        toast('Deleted ' + deletedCount + ' crab(s), ' + failedCount + ' failed.');
+      } else {
+        toast('Deleted ' + deletedCount + ' crab(s).');
+      }
+    });
+
     $('#btn-receive').addEventListener('click', openReceiveModal);
     $('#rc-cancel').addEventListener('click', function () { $('#receive-modal').hidden = true; });
     $('#rc-save').addEventListener('click', saveReceiveCrabs);
@@ -2387,7 +2644,9 @@
     $('#btn-move').addEventListener('click', openMoveToBoxesModal);
     $('#mv-cancel').addEventListener('click', function () { $('#move-modal').hidden = true; });
     $('#mv-save').addEventListener('click', saveMoveToBoxes);
-    $('#exp-inv').addEventListener('click', function () { triggerExport('inventory'); });
+    $('#exp-inv').addEventListener('click', function () {
+      triggerExport(S.iSubTab === 'deliv' ? 'deliveries' : 'inventory');
+    });
 
     // Crab Edit
     $('#cr-cancel').addEventListener('click', function () { $('#crab-modal').hidden = true; });

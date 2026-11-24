@@ -372,9 +372,34 @@ class StorageEngine {
     const idx = this.data.inventory_crabs.findIndex(c => c.id === id);
     if (idx === -1) throw new Error('Crab not found');
     const crab = this.data.inventory_crabs[idx];
-    if (crab.status === 'moved') throw new Error('Moved crabs cannot be removed from inventory');
+    if (crab.status === 'moved') {
+      const box = Object.values(this.data.boxes).find(b => b && b.batch_no === crab.batch_no && (b.status === 'growing' || b.status === 'molting'));
+      if (box) {
+        throw new Error(`Cannot delete crab ${crab.batch_no}: it is currently active in Box ${box.box_no}. Please clear or harvest the box first.`);
+      }
+    }
 
     this.data.inventory_crabs.splice(idx, 1);
+    this.save();
+    return { success: true };
+  }
+
+  removeDelivery(id) {
+    const idx = this.data.deliveries.findIndex(d => d.id === id);
+    if (idx === -1) throw new Error('Delivery not found');
+
+    const crabs = this.data.inventory_crabs.filter(c => c.delivery_id === id);
+    for (const crab of crabs) {
+      if (crab.status === 'moved') {
+        const box = Object.values(this.data.boxes).find(b => b && b.batch_no === crab.batch_no && (b.status === 'growing' || b.status === 'molting'));
+        if (box) {
+          throw new Error(`Cannot delete delivery: Crab ${crab.batch_no} is currently active in Box ${box.box_no}. Please clear or harvest the box first.`);
+        }
+      }
+    }
+
+    this.data.inventory_crabs = this.data.inventory_crabs.filter(c => c.delivery_id !== id);
+    this.data.deliveries.splice(idx, 1);
     this.save();
     return { success: true };
   }

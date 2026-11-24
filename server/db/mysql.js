@@ -300,13 +300,51 @@ class MySQLAdapter {
     const [rows] = await pool.query('SELECT * FROM inventory_crabs WHERE id = ?', [id]);
     const crab = rows[0];
     if (!crab) throw new Error('Crab not found');
-    if (crab.status === 'moved') throw new Error('Moved crabs cannot be removed from inventory');
+
+    if (crab.status === 'moved') {
+      const [boxRows] = await pool.query('SELECT box_no FROM boxes WHERE batch_no = ? AND status IN ("growing", "molting")', [crab.batch_no]);
+      if (boxRows && boxRows.length > 0) {
+        throw new Error(`Cannot delete crab ${crab.batch_no}: it is currently active in Box ${boxRows[0].box_no}. Please clear or harvest the box first.`);
+      }
+    }
 
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
       await conn.query('DELETE FROM batch_numbers_in_use WHERE batch_no = ?', [crab.batch_no]);
       await conn.query('DELETE FROM inventory_crabs WHERE id = ?', [id]);
+      await conn.commit();
+      return { success: true };
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  }
+
+  async removeDelivery(id) {
+    const [delRows] = await pool.query('SELECT * FROM deliveries WHERE id = ?', [id]);
+    if (!delRows || delRows.length === 0) throw new Error('Delivery not found');
+
+    const [crabs] = await pool.query('SELECT * FROM inventory_crabs WHERE delivery_id = ?', [id]);
+    for (const crab of crabs) {
+      if (crab.status === 'moved') {
+        const [boxRows] = await pool.query('SELECT box_no FROM boxes WHERE batch_no = ? AND status IN ("growing", "molting")', [crab.batch_no]);
+        if (boxRows && boxRows.length > 0) {
+          throw new Error(`Cannot delete delivery: Crab ${crab.batch_no} is currently active in Box ${boxRows[0].box_no}. Please clear or harvest the box first.`);
+        }
+      }
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const crab of crabs) {
+        await conn.query('DELETE FROM batch_numbers_in_use WHERE batch_no = ?', [crab.batch_no]);
+      }
+      await conn.query('DELETE FROM inventory_crabs WHERE delivery_id = ?', [id]);
+      await conn.query('DELETE FROM deliveries WHERE id = ?', [id]);
       await conn.commit();
       return { success: true };
     } catch (err) {

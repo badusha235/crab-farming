@@ -141,6 +141,9 @@
     getDeliveries: function () {
       return this.request('/inventory/deliveries');
     },
+    removeDelivery: function (id) {
+      return this.request('/inventory/deliveries/' + id, { method: 'DELETE' });
+    },
     getUsedBatches: function (excludeCrab, excludeBox) {
       var q = [];
       if (excludeCrab) q.push('excludeCrab=' + excludeCrab);

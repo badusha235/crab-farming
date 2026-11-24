@@ -71,17 +71,21 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
-async function startServer() {
+async function startServer(port = config.port) {
   await db.setupDatabase();
-  const server = app.listen(config.port, '0.0.0.0', () => {
-    console.log(`=======================================================`);
-    console.log(`🦀 Crab Box Register server running on:`);
-    console.log(`   - http://localhost:${config.port}`);
-    console.log(`   - http://127.0.0.1:${config.port}`);
-    console.log(`📊 Storage engine: ${db.activeEngine}`);
-    console.log(`=======================================================`);
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, '0.0.0.0', () => {
+      const p = server.address() ? server.address().port : port;
+      console.log(`=======================================================`);
+      console.log(`🦀 Crab Box Register server running on:`);
+      console.log(`   - http://localhost:${p}`);
+      console.log(`   - http://127.0.0.1:${p}`);
+      console.log(`📊 Storage engine: ${db.activeEngine}`);
+      console.log(`=======================================================`);
+      resolve(server);
+    });
+    server.on('error', reject);
   });
-  return server;
 }
 
 if (require.main === module) {

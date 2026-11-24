@@ -168,51 +168,77 @@
 
   <!-- 1. INVENTORY VIEW -->
   <section class="view" id="view-inventory" hidden>
-    <section class="stats" id="i-stats" aria-label="Inventory summary"></section>
     <div class="bar">
+      <div class="chips" id="i-subtabs" role="group" aria-label="Inventory section pages">
+        <button type="button" class="chip" id="btn-isub-crabs" data-isub="crabs" aria-pressed="true">📦 Inventory Crabs <span class="c" id="i-crabs-cnt">0</span></button>
+        <button type="button" class="chip" id="btn-isub-deliv" data-isub="deliv" aria-pressed="false">🚚 Deliveries <span class="c" id="i-deliv-cnt">0</span></button>
+      </div>
+      <span class="spacer"></span>
       <button class="btn primary" id="btn-receive">Receive crabs</button>
       <button class="btn" id="btn-move" disabled>Move to boxes</button>
-      <div class="chips" id="i-chips" role="group" aria-label="Filter inventory"></div>
-      <span class="spacer"></span>
+      <button class="btn danger ghost" id="btn-del-selected-inv" style="display:none">Delete selected</button>
       <button class="btn small" id="exp-inv">Export CSV</button>
     </div>
-    <p class="hint" id="i-hint"></p>
-    <div class="tablewrap" id="i-wrap" hidden>
-      <table class="t" style="min-width:720px">
-        <thead>
-          <tr>
-            <th><input type="checkbox" class="tick" id="i-all" aria-label="Select all crabs in stock"></th>
-            <th>Batch no.</th>
-            <th>Seller</th>
-            <th class="r">Weight (kg)</th>
-            <th class="r">Price (&#8377;)</th>
-            <th>Sex</th>
-            <th>Received</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="i-body"></tbody>
-      </table>
-    </div>
-    <section id="i-deliv-wrap" hidden>
-      <h3 class="sec">Deliveries</h3>
-      <div class="tablewrap">
-        <table class="t" style="min-width:560px">
+
+    <!-- Page 1: Inventory Crabs -->
+    <div id="i-page-crabs" class="subpage">
+      <section class="stats" id="i-stats" aria-label="Inventory summary"></section>
+      <div class="bar">
+        <div class="chips" id="i-chips" role="group" aria-label="Filter inventory"></div>
+        <span class="spacer"></span>
+        <span id="i-crabs-info" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+      <p class="hint" id="i-hint"></p>
+      <div class="tablewrap" id="i-wrap" hidden>
+        <table class="t" style="min-width:760px">
           <thead>
             <tr>
-              <th>Received</th>
+              <th style="width:36px"><input type="checkbox" class="tick" id="i-all" aria-label="Select all crabs in stock"></th>
+              <th>Batch no.</th>
               <th>Seller</th>
-              <th class="r">Crabs</th>
               <th class="r">Weight (kg)</th>
-              <th class="r">Cost (&#8377;)</th>
-              <th class="r">In stock</th>
-              <th class="r">Moved</th>
+              <th class="r">Price (&#8377;)</th>
+              <th>Sex</th>
+              <th>Received</th>
+              <th>Status</th>
+              <th style="width:80px;text-align:center">Action</th>
             </tr>
           </thead>
-          <tbody id="i-deliv"></tbody>
+          <tbody id="i-body"></tbody>
         </table>
       </div>
-    </section>
+      <div class="pager" id="i-crabs-pager"></div>
+    </div>
+
+    <!-- Page 2: Deliveries -->
+    <div id="i-page-deliv" class="subpage" hidden>
+      <section id="i-deliv-wrap" style="display:flex;flex-direction:column;gap:16px">
+        <div class="bar">
+          <h3 class="sec" style="margin:0">Deliveries</h3>
+          <span class="spacer"></span>
+          <span id="i-deliv-info" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+        <p class="hint" id="i-deliv-hint" hidden>No deliveries received yet. Tap Receive crabs to log a new delivery from a seller.</p>
+        <div class="tablewrap">
+          <table class="t" style="min-width:640px">
+            <thead>
+              <tr>
+                <th>Received</th>
+                <th>Seller</th>
+                <th class="r">Crabs</th>
+                <th class="r">Weight (kg)</th>
+                <th class="r">Cost (&#8377;)</th>
+                <th class="r">In stock</th>
+                <th class="r">Moved</th>
+                <th style="width:80px;text-align:center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="i-deliv"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="i-deliv-pager"></div>
+      </section>
+    </div>
   </section>
 
   <!-- 2. BOXES VIEW (Opens on Boxes by default!) -->
@@ -241,7 +267,7 @@
     </div>
 
     <!-- Page 1: Harvest Lots -->
-    <div id="h-page-lots">
+    <div id="h-page-lots" class="subpage">
       <section class="stats" id="h-stats" aria-label="Harvest summary"></section>
       <p class="hint" id="h-hint"></p>
       <div class="tablewrap" id="h-wrap" hidden>
@@ -265,10 +291,10 @@
     </div>
 
     <!-- Page 2: Profit by Batch Number -->
-    <div id="h-page-profit" hidden>
+    <div id="h-page-profit" class="subpage" hidden>
       <p class="hint" id="h-profit-hint" hidden>No harvested batches with profit data yet. Harvest crabs from boxes to see profit calculations here.</p>
-      <section id="h-profit-wrap">
-        <div class="bar" style="margin-bottom:8px">
+      <section id="h-profit-wrap" style="display:flex;flex-direction:column;gap:16px">
+        <div class="bar">
           <h3 class="sec" style="margin:0">Profit by batch number</h3>
           <span class="spacer"></span>
           <span id="h-profit-info" style="font-size:13px;color:var(--muted)"></span>

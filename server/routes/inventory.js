@@ -58,6 +58,17 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/inventory/deliveries/:id
+router.delete('/deliveries/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const result = await db.removeDelivery(id);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // DELETE /api/inventory/:id
 router.delete('/:id', async (req, res) => {
   try {
