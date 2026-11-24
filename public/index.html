@@ -262,6 +262,7 @@
         <button type="button" class="chip" id="btn-hsub-profit" data-hsub="profit" aria-pressed="false">💰 Profit by Batch <span class="c" id="h-profit-cnt">0</span></button>
       </div>
       <span class="spacer"></span>
+      <button class="btn danger ghost" id="btn-del-selected-harvest" style="display:none">Delete selected</button>
       <button class="btn primary" id="btn-log-harvest">Log harvest</button>
       <button class="btn small" id="exp-harvest">Export CSV</button>
     </div>
@@ -274,6 +275,7 @@
         <table class="t">
           <thead>
             <tr>
+              <th style="width:36px"><input type="checkbox" class="tick" id="h-all" aria-label="Select all harvest lots"></th>
               <th>Date</th>
               <th>Boxes</th>
               <th class="r">Weight (kg)</th>
@@ -282,12 +284,14 @@
               <th class="r">Revenue</th>
               <th>Buyer</th>
               <th>Documents</th>
+              <th style="width:80px;text-align:center">Action</th>
             </tr>
           </thead>
           <tbody id="h-body"></tbody>
           <tfoot id="h-foot"></tfoot>
         </table>
       </div>
+      <div class="pager" id="h-lots-pager"></div>
     </div>
 
     <!-- Page 2: Profit by Batch Number -->

@@ -57,7 +57,10 @@
     invPage: 1,          // current page for inventory crabs table
     invPageSize: 20,     // rows per page for inventory crabs table
     delivPage: 1,        // current page for deliveries table
-    delivPageSize: 20    // rows per page for deliveries table
+    delivPageSize: 20,   // rows per page for deliveries table
+    hSelLots: {},        // Selected harvest lots map: id -> bool
+    harvestPage: 1,      // current page for harvest lots table
+    harvestPageSize: 20  // rows per page for harvest lots table
   };
 
   /* ---------- Helpers ---------- */
@@ -113,9 +116,22 @@
   }
 
   var toastTimer;
-  function toast(msg) {
+  function toast(msg, type) {
     var t = $('#toast');
-    t.textContent = msg;
+    if (!t) return;
+    var isErr = type === 'error' || /error|failed|cannot|could not|negative|invalid/i.test(msg);
+    var isSuccess = type === 'success' || /deleted|saved|created|received|moved|updated|success/i.test(msg);
+
+    var icon = isErr ? '⚠️' : (isSuccess ? '✅' : 'ℹ️');
+    t.className = 'toast' + (isErr ? ' toast-error' : (isSuccess ? ' toast-success' : ''));
+    t.textContent = '';
+    var icSpan = document.createElement('span');
+    icSpan.className = 'toast-icon';
+    icSpan.textContent = icon;
+    var txSpan = document.createElement('span');
+    txSpan.textContent = msg;
+    t.appendChild(icSpan);
+    t.appendChild(txSpan);
     t.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.hidden = true; }, 3600);
@@ -849,14 +865,15 @@
   }
 
   function updateInventoryActions() {
-    var vis = getVisibleInventory().filter(function (c) { return c.status === 'stock'; });
+    var vis = getVisibleInventory();
     var selCount = vis.filter(function (c) { return S.iSel[c.id]; }).length;
     var totalSel = Object.keys(S.iSel).length;
 
+    var stockSelCount = vis.filter(function (c) { return S.iSel[c.id] && c.status === 'stock'; }).length;
     var btnMove = $('#btn-move');
     if (btnMove) {
-      btnMove.disabled = (totalSel === 0);
-      btnMove.textContent = totalSel ? 'Move to boxes (' + totalSel + ')' : 'Move to boxes';
+      btnMove.disabled = (stockSelCount === 0);
+      btnMove.textContent = stockSelCount ? 'Move to boxes (' + stockSelCount + ')' : 'Move to boxes';
     }
 
     var btnDel = $('#btn-del-selected-inv');
@@ -873,11 +890,11 @@
   }
 
   function selectAllVisibleInventory(checked) {
-    S.iSel = {};
+    var vis = getVisibleInventory();
     if (checked) {
-      getVisibleInventory().forEach(function (c) {
-        if (c.status === 'stock') S.iSel[c.id] = true;
-      });
+      vis.forEach(function (c) { S.iSel[c.id] = true; });
+    } else {
+      vis.forEach(function (c) { delete S.iSel[c.id]; });
     }
     renderInventoryTable();
   }
@@ -929,21 +946,31 @@
 
     pageRows.forEach(function (c) {
       var tr = document.createElement('tr');
+      tr.className = 'clickable-row' + (S.iSel[c.id] ? ' selected' : '');
       var tdTick = document.createElement('td');
 
-      if (c.status === 'stock') {
-        var cb = document.createElement('input');
-        cb.type = 'checkbox'; cb.className = 'tick';
-        cb.checked = !!S.iSel[c.id];
-        cb.setAttribute('aria-label', 'Select crab ' + c.batch_no);
-        cb.addEventListener('change', function () {
-          if (cb.checked) S.iSel[c.id] = true;
-          else delete S.iSel[c.id];
-          updateInventoryActions();
-        });
-        tdTick.appendChild(cb);
-      }
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'tick';
+      cb.checked = !!S.iSel[c.id];
+      cb.setAttribute('aria-label', 'Select crab ' + c.batch_no);
+      cb.addEventListener('click', function (e) { e.stopPropagation(); });
+      cb.addEventListener('change', function () {
+        if (cb.checked) S.iSel[c.id] = true;
+        else delete S.iSel[c.id];
+        tr.classList.toggle('selected', !!S.iSel[c.id]);
+        updateInventoryActions();
+      });
+      tdTick.appendChild(cb);
       tr.appendChild(tdTick);
+
+      tr.addEventListener('click', function (e) {
+        if (e.target.closest('button, input, a')) return;
+        if (S.iSel[c.id]) delete S.iSel[c.id];
+        else S.iSel[c.id] = true;
+        cb.checked = !!S.iSel[c.id];
+        tr.classList.toggle('selected', !!S.iSel[c.id]);
+        updateInventoryActions();
+      });
 
       var tdBatch = document.createElement('td');
       if (c.status === 'stock') {
@@ -1467,6 +1494,27 @@
     ]);
   }
 
+  function updateHarvestActions() {
+    var allLots = S.harvests || [];
+    var totalSel = Object.keys(S.hSelLots).length;
+    var btnDelH = $('#btn-del-selected-harvest');
+    if (btnDelH) {
+      btnDelH.style.display = (S.hSubTab === 'lots' && totalSel > 0) ? '' : 'none';
+      btnDelH.textContent = 'Delete selected (' + totalSel + ')';
+    }
+
+    var tickAll = $('#h-all');
+    if (tickAll) {
+      var pageSize = S.harvestPageSize || 20;
+      var page = S.harvestPage || 1;
+      var start = (page - 1) * pageSize;
+      var pageLots = allLots.slice(start, start + pageSize);
+      var pageSelCount = pageLots.filter(function (h) { return S.hSelLots[h.id]; }).length;
+      tickAll.checked = pageLots.length > 0 && pageSelCount === pageLots.length;
+      tickAll.indeterminate = pageSelCount > 0 && pageSelCount < pageLots.length;
+    }
+  }
+
   function renderHarvestTable() {
     renderHarvestStats();
     renderProfitTable();
@@ -1474,7 +1522,8 @@
     var curSub = S.hSubTab || 'lots';
 
     // Update subtab chips and counts
-    var lotsCount = (S.harvests || []).length;
+    var allLots = (S.harvests || []).slice();
+    var lotsCount = allLots.length;
     var profitCount = (S.profits || []).length;
     if ($('#h-lots-cnt')) $('#h-lots-cnt').textContent = lotsCount;
     if ($('#h-profit-cnt')) $('#h-profit-cnt').textContent = profitCount;
@@ -1490,11 +1539,20 @@
     if ($('#btn-log-harvest')) $('#btn-log-harvest').style.display = (curSub === 'lots') ? '' : 'none';
     if ($('#exp-harvest')) $('#exp-harvest').textContent = (curSub === 'profit') ? 'Export Profit CSV' : 'Export Lots CSV';
 
-    var list = S.harvests || [];
-    $('#h-hint').textContent = (list.length === 0)
+    var total = lotsCount;
+    var pageSize = S.harvestPageSize || 20;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (S.harvestPage < 1) S.harvestPage = 1;
+    if (S.harvestPage > totalPages) S.harvestPage = totalPages;
+
+    var page = S.harvestPage;
+    var start = (page - 1) * pageSize;
+    var pageLots = allLots.slice(start, start + pageSize);
+
+    $('#h-hint').textContent = (lotsCount === 0)
       ? 'No harvests logged yet. Put a box in Harvest status, then tap Log harvest.'
       : '';
-    $('#h-wrap').hidden = (list.length === 0);
+    $('#h-wrap').hidden = (lotsCount === 0);
 
     var body = $('#h-body'); body.textContent = '';
     var foot = $('#h-foot'); foot.textContent = '';
@@ -1507,8 +1565,35 @@
     }
 
     var totCrabs = 0, totG = 0, totRev = 0;
-    list.forEach(function (h) {
+    pageLots.forEach(function (h) {
       var tr = document.createElement('tr');
+      tr.className = 'clickable-row' + (S.hSelLots[h.id] ? ' selected' : '');
+
+      // Checkbox cell
+      var tdTick = document.createElement('td');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'tick';
+      cb.checked = !!S.hSelLots[h.id];
+      cb.setAttribute('aria-label', 'Select harvest lot ' + fmtDate(h.harvest_date));
+      cb.addEventListener('click', function (e) { e.stopPropagation(); });
+      cb.addEventListener('change', function () {
+        if (cb.checked) S.hSelLots[h.id] = true;
+        else delete S.hSelLots[h.id];
+        tr.classList.toggle('selected', !!S.hSelLots[h.id]);
+        updateHarvestActions();
+      });
+      tdTick.appendChild(cb);
+      tr.appendChild(tdTick);
+
+      tr.addEventListener('click', function (e) {
+        if (e.target.closest('button, input, a')) return;
+        if (S.hSelLots[h.id]) delete S.hSelLots[h.id];
+        else S.hSelLots[h.id] = true;
+        cb.checked = !!S.hSelLots[h.id];
+        tr.classList.toggle('selected', !!S.hSelLots[h.id]);
+        updateHarvestActions();
+      });
+
       var tdDate = document.createElement('td');
       var btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'rowbtn';
@@ -1530,6 +1615,32 @@
       var nFiles = h.files ? h.files.length : 0;
       tr.appendChild(td(nFiles ? nFiles + (nFiles === 1 ? ' file' : ' files') : '–'));
 
+      // Action cell (Delete single harvest)
+      var tdAct = document.createElement('td');
+      tdAct.style.textAlign = 'center';
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn danger ghost small';
+      delBtn.style.padding = '2px 8px';
+      delBtn.style.fontSize = '12px';
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete harvest lot';
+      delBtn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this harvest lot from ' + fmtDate(h.harvest_date) + '?')) return;
+        try {
+          await window.CrabApi.deleteHarvest(h.id);
+          delete S.hSelLots[h.id];
+          await loadData();
+          renderHarvestTable();
+          toast('Harvest lot deleted');
+        } catch (err) {
+          toast(err.message);
+        }
+      });
+      tdAct.appendChild(delBtn);
+      tr.appendChild(tdAct);
+
       body.appendChild(tr);
 
       totCrabs += (h.items ? h.items.length : 1);
@@ -1537,9 +1648,10 @@
       totRev += rev;
     });
 
-    if (list.length > 0) {
+    if (pageLots.length > 0) {
       var fTr = document.createElement('tr');
-      fTr.appendChild(td('Total'));
+      fTr.appendChild(td('')); // for checkbox column
+      fTr.appendChild(td('Page Total'));
       fTr.appendChild(td(totCrabs + (totCrabs === 1 ? ' crab' : ' crabs')));
       fTr.appendChild(td(fmtKg(totG), 'r'));
       fTr.appendChild(td(''));
@@ -1547,8 +1659,29 @@
       fTr.appendChild(td(fmtMoney(totRev), 'r'));
       fTr.appendChild(td(''));
       fTr.appendChild(td(''));
+      fTr.appendChild(td('')); // for action column
       foot.appendChild(fTr);
     }
+
+    updateHarvestActions();
+
+    // Pager for Harvest Lots
+    buildPager(
+      $('#h-lots-pager'),
+      null,
+      total,
+      page,
+      pageSize,
+      function (newPage) {
+        S.harvestPage = newPage;
+        renderHarvestTable();
+      },
+      function (newSize) {
+        S.harvestPageSize = newSize;
+        S.harvestPage = 1;
+        renderHarvestTable();
+      }
+    );
   }
 
   function renderProfitTable() {
@@ -2661,6 +2794,42 @@
     $('#btn-hsub-profit').addEventListener('click', function () {
       S.hSubTab = 'profit';
       renderHarvestTable();
+    });
+
+    $('#h-all').addEventListener('change', function () {
+      var checked = $('#h-all').checked;
+      var allLots = S.harvests || [];
+      if (checked) {
+        allLots.forEach(function (h) { S.hSelLots[h.id] = true; });
+      } else {
+        S.hSelLots = {};
+      }
+      renderHarvestTable();
+    });
+
+    $('#btn-del-selected-harvest').addEventListener('click', async function () {
+      var ids = Object.keys(S.hSelLots).filter(function (id) { return S.hSelLots[id]; });
+      if (ids.length === 0) return;
+      if (!confirm('Are you sure you want to delete ' + ids.length + ' selected harvest lot(s)?')) return;
+
+      var deletedCount = 0;
+      var failedCount = 0;
+      for (var i = 0; i < ids.length; i++) {
+        try {
+          await window.CrabApi.deleteHarvest(parseInt(ids[i], 10));
+          deletedCount++;
+        } catch (e) {
+          failedCount++;
+        }
+      }
+      S.hSelLots = {};
+      await loadData();
+      renderHarvestTable();
+      if (failedCount > 0) {
+        toast('Deleted ' + deletedCount + ' harvest lot(s), ' + failedCount + ' failed.');
+      } else {
+        toast('Deleted ' + deletedCount + ' harvest lot(s).');
+      }
     });
 
     $('#btn-log-harvest').addEventListener('click', function () { openHarvestModal(null); });
