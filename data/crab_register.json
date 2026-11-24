@@ -15,6 +15,14 @@
       "password_hash": "$2a$10$GJhN4EHSn.ivSWfKv4ce3.CiIILaUpzxkD8dTp1VuzQlaZhGnEHOS",
       "role": "staff",
       "created_at": "2026-11-24T04:24:14.925Z"
+    },
+    {
+      "id": 3,
+      "name": "Badusha",
+      "email": "badusha237@gmail.com",
+      "role": "owner",
+      "password_hash": "$2a$10$Dz41RTNcoodTolcT7/eleuiS74wdOz86gkAKZujWf/Z707HnAkTye",
+      "created_at": "2026-11-24T05:53:24.956Z"
     }
   ],
   "settings": {

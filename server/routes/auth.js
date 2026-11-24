@@ -26,6 +26,9 @@ router.post('/send-otp', async (req, res) => {
     }
 
     const user = await db.findUserByPhone(phone);
+    if (!user) {
+      return res.status(404).json({ error: 'No account registered with this mobile number. Please contact your administrator.' });
+    }
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
@@ -37,8 +40,8 @@ router.post('/send-otp', async (req, res) => {
     res.json({
       success: true,
       phone,
-      exists: !!user,
-      userName: user ? user.name : null,
+      exists: true,
+      userName: user.name,
       message: `OTP sent successfully to +91 ${phone}`,
       dev_otp: otp
     });
@@ -66,23 +69,14 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     let user = await db.findUserByPhone(phone);
-    let created = false;
-
     if (!user) {
-      // New user registration
-      const trimmedName = String(name || '').trim();
-      if (!trimmedName) {
-        return res.status(400).json({ error: 'Full name is required to create a new account' });
-      }
-      const userRole = (role === 'owner') ? 'owner' : 'staff';
-      user = await db.createUserWithPhone(trimmedName, phone, userRole, `${phone}@crabfarm.in`);
-      created = true;
+      return res.status(404).json({ error: 'No account registered with this mobile number. Please contact your administrator.' });
     }
 
     const token = generateToken(user);
     res.json({
       token,
-      created,
+      created: false,
       user: {
         id: user.id,
         name: user.name,
