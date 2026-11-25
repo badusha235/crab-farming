@@ -233,16 +233,144 @@
     </div>
 
     <div class="sensors" id="sensors"></div>
-    <div class="charts">
-      <div class="chartbox">
-        <h3>Water temperature <small id="t-range"></small></h3>
-        <div class="chart" id="chart-temp"></div>
-        <div class="legend" id="legend-temp"></div>
+
+    <!-- SYSTEM AUTOMATION & CONTROLS (Monitor-only) -->
+    <div class="controls-section" id="monitor-controls-section">
+      <div class="controls-header">
+        <div>
+          <h3 style="margin:0;font-size:16px;font-weight:700">System Automation &amp; Controls</h3>
+          <p class="muted" style="margin:2px 0 0;font-size:13px">Direct actuator controls for water circulation, box cleaning, water exchange &amp; aeration</p>
+        </div>
+        <span class="control-status-pill active" id="ctrl-master-status">Automation Ready</span>
       </div>
-      <div class="chartbox">
-        <h3>Water pH <small id="p-range"></small></h3>
-        <div class="chart" id="chart-ph"></div>
-        <div class="legend" id="legend-ph"></div>
+
+      <div class="controls-grid">
+        <!-- 1. Water Flow Control -->
+        <div class="control-card">
+          <div class="control-card-head">
+            <div>
+              <div class="control-title">🌊 Water Flow Control</div>
+              <div class="control-sub">Main RAS circulation pump</div>
+            </div>
+            <label class="control-switch" aria-label="Toggle water flow pump">
+              <input type="checkbox" id="ctrl-flow-toggle" checked>
+              <span class="control-switch-slider"></span>
+            </label>
+          </div>
+          <div class="control-body">
+            <div class="control-metric-row">
+              <span>Flow Level</span>
+              <strong id="ctrl-flow-val">Medium</strong>
+            </div>
+            <div class="control-chips" id="ctrl-flow-presets">
+              <button type="button" class="chip" data-flow="Low" aria-pressed="false">Low</button>
+              <button type="button" class="chip" data-flow="Medium" aria-pressed="true">Medium</button>
+              <button type="button" class="chip" data-flow="High" aria-pressed="false">High</button>
+            </div>
+          </div>
+          <div class="control-foot">
+            <span class="control-status-pill active" id="ctrl-flow-status">Running · Medium</span>
+          </div>
+        </div>
+
+        <!-- 2. Crab Box Cleaning Control -->
+        <div class="control-card">
+          <div class="control-card-head">
+            <div>
+              <div class="control-title">🚿 Crab Box Jet Cleaning</div>
+              <div class="control-sub">Full system high-pressure flush</div>
+            </div>
+            <span class="control-status-pill" id="ctrl-clean-status">Idle</span>
+          </div>
+          <div class="control-body">
+            <div class="control-metric-row">
+              <span>Flush Progress</span>
+              <strong id="ctrl-clean-pct">0%</strong>
+            </div>
+            <div class="control-progress" id="ctrl-clean-progress-wrap">
+              <div class="control-progress-bar" id="ctrl-clean-progress-bar" style="width:0%"></div>
+            </div>
+            <div class="control-actions">
+              <button type="button" class="btn primary small" id="btn-start-cleaning">Run Full Cleaning</button>
+              <button type="button" class="btn small" id="btn-stop-cleaning" disabled>Stop</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Scheduled Water Change -->
+        <div class="control-card">
+          <div class="control-card-head">
+            <div>
+              <div class="control-title">💧 Water Change</div>
+              <div class="control-sub">Drain &amp; fresh brackish refill</div>
+            </div>
+            <span class="control-status-pill" id="ctrl-wc-status">Standby</span>
+          </div>
+          <div class="control-body">
+            <label class="control-label" for="ctrl-wc-volume">Exchange Volume</label>
+            <select class="control-select" id="ctrl-wc-volume">
+              <option value="10">10% Partial Exchange</option>
+              <option value="25" selected>25% Standard Exchange</option>
+              <option value="50">50% Deep Exchange</option>
+            </select>
+            <div class="control-progress" id="ctrl-wc-progress-wrap" hidden>
+              <div class="control-progress-bar" id="ctrl-wc-progress-bar" style="width:0%"></div>
+            </div>
+            <div class="control-actions">
+              <button type="button" class="btn primary small" id="btn-start-wc">Start Exchange</button>
+              <button type="button" class="btn small" id="btn-stop-wc" disabled>Abort</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Aeration & Dissolved Oxygen -->
+        <div class="control-card">
+          <div class="control-card-head">
+            <div>
+              <div class="control-title">🫧 Aeration &amp; Oxygen</div>
+              <div class="control-sub">Dual air-stone compressors</div>
+            </div>
+            <label class="control-switch" aria-label="Toggle aerator">
+              <input type="checkbox" id="ctrl-air-toggle" checked>
+              <span class="control-switch-slider"></span>
+            </label>
+          </div>
+          <div class="control-body">
+            <div class="control-metric-row">
+              <span>Operating Mode</span>
+              <strong id="ctrl-air-mode-label">Standard</strong>
+            </div>
+            <div class="control-chips" id="ctrl-air-modes">
+              <button type="button" class="chip" data-mode="Eco" aria-pressed="false">Eco</button>
+              <button type="button" class="chip" data-mode="Standard" aria-pressed="true">Standard</button>
+              <button type="button" class="chip" data-mode="Turbo" aria-pressed="false">Turbo</button>
+            </div>
+          </div>
+          <div class="control-foot">
+            <span class="control-status-pill active" id="ctrl-air-status">Active · Standard</span>
+          </div>
+        </div>
+
+        <!-- 5. Crab Box Water Level -->
+        <div class="control-card">
+          <div class="control-card-head">
+            <div>
+              <div class="control-title">📏 Crab Box Water Level</div>
+              <div class="control-sub">Target depth inside boxes</div>
+            </div>
+          </div>
+          <div class="control-body">
+            <div class="control-metric-row">
+              <span>Selected Level</span>
+              <strong id="ctrl-level-val">Medium</strong>
+            </div>
+            <div class="control-chips" id="ctrl-level-presets">
+              <button type="button" class="chip" data-level="Low" aria-pressed="false">Low</button>
+              <button type="button" class="chip" data-level="Medium" aria-pressed="true">Medium</button>
+              <button type="button" class="chip" data-level="High" aria-pressed="false">High</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div>

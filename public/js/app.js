@@ -2149,9 +2149,12 @@
         if (last.ph !== null) latestPh = last.ph;
       }
     }
-    // If not in database or dummy requested, fallback to default ideal values
-    var valTemp = latestTemp !== null ? latestTemp : 28.5;
-    var valPh = latestPh !== null ? latestPh : 7.85;
+    // If not in database or dummy requested, fallback to live dummy stream values
+    var liveLast = (typeof liveTelemetryStream !== 'undefined' && liveTelemetryStream.points.length)
+      ? liveTelemetryStream.points[liveTelemetryStream.points.length - 1]
+      : null;
+    var valTemp = latestTemp !== null ? latestTemp : (liveLast ? liveLast.temp : 28.5);
+    var valPh = latestPh !== null ? latestPh : (liveLast ? liveLast.ph : 7.85);
 
     // Additional aquaculture parameters with realistic dummy readings
     var meters = [
@@ -2184,7 +2187,7 @@
       {
         title: 'Dissolved Oxygen',
         icon: '🫧',
-        val: 6.4,
+        val: liveTelemetryStream ? liveTelemetryStream.doVal : 6.4,
         unit: 'mg/L',
         min: 0,
         max: 12,
@@ -2197,7 +2200,7 @@
       {
         title: 'Salinity',
         icon: '🧂',
-        val: 24.5,
+        val: liveTelemetryStream ? liveTelemetryStream.salinityVal : 24.5,
         unit: 'ppt',
         min: 0,
         max: 40,
@@ -2210,7 +2213,7 @@
       {
         title: 'Ammonia (NH₃)',
         icon: '⚠️',
-        val: 0.08,
+        val: liveTelemetryStream ? liveTelemetryStream.ammoniaVal : 0.08,
         unit: 'mg/L',
         min: 0,
         max: 1.0,
@@ -2223,7 +2226,7 @@
       {
         title: 'Water Circulation',
         icon: '🌊',
-        val: 1450,
+        val: liveTelemetryStream ? liveTelemetryStream.flowVal : 1450,
         unit: 'L/h',
         min: 500,
         max: 2500,
@@ -2258,7 +2261,63 @@
     });
   }
 
+  /* ---------- Live Telemetry Stream (Monitor-only) ---------- */
+  var liveTelemetryStream = {
+    initialized: false,
+    timer: null,
+    cleanTimer: null,
+    wcTimer: null,
+    points: [],
+    doVal: 6.4,
+    salinityVal: 24.5,
+    ammoniaVal: 0.08,
+    flowVal: 1450
+  };
+
+  function initLiveTelemetryStream() {
+    if (liveTelemetryStream.initialized) return;
+    liveTelemetryStream.initialized = true;
+    var now = Date.now();
+    var temp = 27.6;
+    var ph = 7.95;
+    for (var i = 24; i >= 0; i--) {
+      temp = Math.max(25.5, Math.min(31.5, temp + (Math.random() - 0.5) * 0.35));
+      ph = Math.max(7.5, Math.min(8.4, ph + (Math.random() - 0.5) * 0.08));
+      liveTelemetryStream.points.push({
+        t: now - i * 2500,
+        temp: Number(temp.toFixed(2)),
+        ph: Number(ph.toFixed(2))
+      });
+    }
+    if (!liveTelemetryStream.timer) {
+      liveTelemetryStream.timer = setInterval(tickLiveTelemetry, 2500);
+    }
+  }
+
+  function tickLiveTelemetry() {
+    if (S.tab !== 'monitor') return;
+    var pts = liveTelemetryStream.points;
+    var last = pts[pts.length - 1] || { temp: 27.8, ph: 7.95 };
+    var nextTemp = Math.max(25.5, Math.min(31.5, last.temp + (Math.random() - 0.5) * 0.35));
+    var nextPh = Math.max(7.5, Math.min(8.4, last.ph + (Math.random() - 0.5) * 0.08));
+    pts.push({
+      t: Date.now(),
+      temp: Number(nextTemp.toFixed(2)),
+      ph: Number(nextPh.toFixed(2))
+    });
+    if (pts.length > 30) pts.shift();
+
+    // Update dummy meter values slightly so gauges also feel live
+    liveTelemetryStream.doVal = Number(Math.max(5.2, Math.min(8.2, liveTelemetryStream.doVal + (Math.random() - 0.5) * 0.18)).toFixed(1));
+    liveTelemetryStream.salinityVal = Number(Math.max(21.0, Math.min(27.5, liveTelemetryStream.salinityVal + (Math.random() - 0.5) * 0.25)).toFixed(1));
+    liveTelemetryStream.ammoniaVal = Number(Math.max(0.02, Math.min(0.16, liveTelemetryStream.ammoniaVal + (Math.random() - 0.5) * 0.02)).toFixed(2));
+    liveTelemetryStream.flowVal = Math.round(Math.max(1200, Math.min(1800, liveTelemetryStream.flowVal + (Math.random() - 0.5) * 35)));
+
+    renderMonitor();
+  }
+
   function renderMonitor() {
+    initLiveTelemetryStream();
     var all = groupReadingsBySensor();
     var locs = Object.keys(all).sort();
 
@@ -2324,9 +2383,15 @@
       sHost.appendChild(c);
     });
 
-    var t1 = Date.now(), t0 = t1 - S.range;
-    drawChart($('#chart-temp'), $('#legend-temp'), all, locs, 'temp', t0, t1, S.settings.temp_min, S.settings.temp_max, '°C');
-    drawChart($('#chart-ph'), $('#legend-ph'), all, locs, 'ph', t0, t1, S.settings.ph_min, S.settings.ph_max, '');
+    var t1 = Date.now();
+    var liveStart = liveTelemetryStream.points.length ? liveTelemetryStream.points[0].t : (t1 - 60000);
+    var t0 = locs.length ? (t1 - S.range) : liveStart;
+    if ($('#chart-temp') && $('#legend-temp')) {
+      drawChart($('#chart-temp'), $('#legend-temp'), displayAll, displayLocs, 'temp', t0, t1, S.settings.temp_min, S.settings.temp_max, '°C');
+    }
+    if ($('#chart-ph') && $('#legend-ph')) {
+      drawChart($('#chart-ph'), $('#legend-ph'), displayAll, displayLocs, 'ph', t0, t1, S.settings.ph_min, S.settings.ph_max, '');
+    }
 
     // Out of range alerts
     var alerts = [];
@@ -2501,6 +2566,214 @@
       }
     }
     return out;
+  }
+
+  function initMonitorControls() {
+    var flowToggle = $('#ctrl-flow-toggle');
+    var flowVal = $('#ctrl-flow-val');
+    var flowStatus = $('#ctrl-flow-status');
+    var flowPresets = document.querySelectorAll('#ctrl-flow-presets .chip');
+    var currentFlowLevel = 'Medium';
+
+    function syncFlowUI() {
+      var on = flowToggle ? flowToggle.checked : true;
+      if (flowVal) flowVal.textContent = on ? currentFlowLevel : 'Off';
+      if (flowStatus) {
+        flowStatus.textContent = on ? ('Running · ' + currentFlowLevel) : 'Pump Stopped';
+        flowStatus.className = 'control-status-pill ' + (on ? 'active' : '');
+      }
+      flowPresets.forEach(function (btn) {
+        btn.setAttribute('aria-pressed', on && btn.getAttribute('data-flow') === currentFlowLevel ? 'true' : 'false');
+      });
+    }
+
+    if (flowToggle) {
+      flowToggle.addEventListener('change', function () {
+        syncFlowUI();
+        toast(flowToggle.checked ? 'Water circulation pump started (' + currentFlowLevel + ')' : 'Water circulation pump stopped');
+      });
+    }
+    flowPresets.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentFlowLevel = btn.getAttribute('data-flow') || 'Medium';
+        if (flowToggle && !flowToggle.checked) flowToggle.checked = true;
+        syncFlowUI();
+        toast('Water flow set to ' + currentFlowLevel);
+      });
+    });
+
+    // 2. Crab Box Jet Cleaning
+    var btnStartClean = $('#btn-start-cleaning');
+    var btnStopClean = $('#btn-stop-cleaning');
+    var cleanStatus = $('#ctrl-clean-status');
+    var cleanPct = $('#ctrl-clean-pct');
+    var cleanWrap = $('#ctrl-clean-progress-wrap');
+    var cleanBar = $('#ctrl-clean-progress-bar');
+
+    function resetCleanUI() {
+      if (cleanPct) cleanPct.textContent = '0%';
+      if (cleanBar) cleanBar.style.width = '0%';
+      if (cleanStatus) {
+        cleanStatus.textContent = 'Idle';
+        cleanStatus.className = 'control-status-pill';
+      }
+      if (btnStartClean) btnStartClean.disabled = false;
+      if (btnStopClean) btnStopClean.disabled = true;
+    }
+
+    if (btnStartClean && btnStopClean) {
+      btnStartClean.addEventListener('click', function () {
+        if (liveTelemetryStream.cleanTimer) return;
+        var pct = 0;
+        btnStartClean.disabled = true;
+        btnStopClean.disabled = false;
+        if (cleanWrap) cleanWrap.hidden = false;
+        if (cleanBar) cleanBar.style.width = '0%';
+        if (cleanPct) cleanPct.textContent = '0%';
+        if (cleanStatus) {
+          cleanStatus.textContent = 'Flushing...';
+          cleanStatus.className = 'control-status-pill running';
+        }
+        toast('Full box jet cleaning started');
+        liveTelemetryStream.cleanTimer = setInterval(function () {
+          pct += 10;
+          if (cleanBar) cleanBar.style.width = pct + '%';
+          if (cleanPct) cleanPct.textContent = pct + '%';
+          if (pct >= 100) {
+            clearInterval(liveTelemetryStream.cleanTimer);
+            liveTelemetryStream.cleanTimer = null;
+            if (cleanStatus) {
+              cleanStatus.textContent = 'Completed';
+              cleanStatus.className = 'control-status-pill active';
+            }
+            toast('Full box jet cleaning completed');
+            setTimeout(resetCleanUI, 1500);
+          }
+        }, 350);
+      });
+
+      btnStopClean.addEventListener('click', function () {
+        if (liveTelemetryStream.cleanTimer) {
+          clearInterval(liveTelemetryStream.cleanTimer);
+          liveTelemetryStream.cleanTimer = null;
+        }
+        resetCleanUI();
+        toast('Box jet cleaning stopped');
+      });
+    }
+
+    // 3. Scheduled Water Change
+    var btnStartWc = $('#btn-start-wc');
+    var btnStopWc = $('#btn-stop-wc');
+    var wcStatus = $('#ctrl-wc-status');
+    var wcWrap = $('#ctrl-wc-progress-wrap');
+    var wcBar = $('#ctrl-wc-progress-bar');
+    var wcVol = $('#ctrl-wc-volume');
+
+    if (btnStartWc && btnStopWc) {
+      btnStartWc.addEventListener('click', function () {
+        if (liveTelemetryStream.wcTimer) return;
+        var pct = 0;
+        var vol = wcVol ? wcVol.value : '25';
+        btnStartWc.disabled = true;
+        btnStopWc.disabled = false;
+        if (wcWrap) wcWrap.hidden = false;
+        if (wcBar) wcBar.style.width = '0%';
+        if (wcStatus) {
+          wcStatus.textContent = 'Draining (' + vol + '%)';
+          wcStatus.className = 'control-status-pill running';
+        }
+        toast('Started ' + vol + '% water exchange');
+        liveTelemetryStream.wcTimer = setInterval(function () {
+          pct += 8;
+          if (wcBar) wcBar.style.width = Math.min(100, pct) + '%';
+          if (pct >= 50 && pct < 100 && wcStatus) {
+            wcStatus.textContent = 'Refilling (' + vol + '%)';
+          }
+          if (pct >= 100) {
+            clearInterval(liveTelemetryStream.wcTimer);
+            liveTelemetryStream.wcTimer = null;
+            btnStartWc.disabled = false;
+            btnStopWc.disabled = true;
+            if (wcStatus) {
+              wcStatus.textContent = 'Refilled';
+              wcStatus.className = 'control-status-pill active';
+            }
+            toast(vol + '% water exchange completed');
+          }
+        }, 400);
+      });
+
+      btnStopWc.addEventListener('click', function () {
+        if (liveTelemetryStream.wcTimer) {
+          clearInterval(liveTelemetryStream.wcTimer);
+          liveTelemetryStream.wcTimer = null;
+        }
+        btnStartWc.disabled = false;
+        btnStopWc.disabled = true;
+        if (wcStatus) {
+          wcStatus.textContent = 'Aborted';
+          wcStatus.className = 'control-status-pill';
+        }
+        toast('Water exchange aborted');
+      });
+    }
+
+    // 4. Aeration & Dissolved Oxygen
+    var airToggle = $('#ctrl-air-toggle');
+    var airModeLabel = $('#ctrl-air-mode-label');
+    var airStatus = $('#ctrl-air-status');
+    var airModes = document.querySelectorAll('#ctrl-air-modes .chip');
+    var currentAirMode = 'Standard';
+
+    function syncAirUI() {
+      var on = airToggle ? airToggle.checked : true;
+      if (airModeLabel) airModeLabel.textContent = on ? currentAirMode : 'Off';
+      if (airStatus) {
+        airStatus.textContent = on ? ('Active · ' + currentAirMode) : 'Aerator Off';
+        airStatus.className = 'control-status-pill ' + (on ? 'active' : '');
+      }
+      airModes.forEach(function (btn) {
+        btn.setAttribute('aria-pressed', on && btn.getAttribute('data-mode') === currentAirMode ? 'true' : 'false');
+      });
+    }
+
+    if (airToggle) {
+      airToggle.addEventListener('change', function () {
+        syncAirUI();
+        toast(airToggle.checked ? 'Aeration enabled (' + currentAirMode + ')' : 'Aeration turned off');
+      });
+    }
+    airModes.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentAirMode = btn.getAttribute('data-mode') || 'Standard';
+        if (airToggle && !airToggle.checked) airToggle.checked = true;
+        syncAirUI();
+        toast('Aeration mode: ' + currentAirMode);
+      });
+    });
+
+    // 5. Crab Box Water Level
+    var levelVal = $('#ctrl-level-val');
+    var levelStatus = $('#ctrl-level-status');
+    var levelPresets = document.querySelectorAll('#ctrl-level-presets .chip');
+    var currentWaterLevel = 'Medium';
+
+    function syncLevelUI() {
+      if (levelVal) levelVal.textContent = currentWaterLevel;
+      if (levelStatus) levelStatus.textContent = currentWaterLevel;
+      levelPresets.forEach(function (btn) {
+        btn.setAttribute('aria-pressed', btn.getAttribute('data-level') === currentWaterLevel ? 'true' : 'false');
+      });
+    }
+
+    levelPresets.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentWaterLevel = btn.getAttribute('data-level') || 'Medium';
+        syncLevelUI();
+        toast('Crab box water level set to ' + currentWaterLevel);
+      });
+    });
   }
 
   /* ---------- 5. SETTINGS & USER MODALS ---------- */
@@ -2924,6 +3197,8 @@
     if ($('#r-save')) $('#r-save').addEventListener('click', saveReading);
     if ($('#btn-import')) $('#btn-import').addEventListener('click', function () { $('#file-import').click(); });
     if ($('#exp-readings')) $('#exp-readings').addEventListener('click', function () { triggerExport('readings'); });
+
+    initMonitorControls();
 
     if ($('#file-import')) $('#file-import').addEventListener('change', function (e) {
       var f = e.target.files && e.target.files[0];

@@ -642,3 +642,224 @@ table.t { border-collapse: collapse; width: 100%; min-width: 600px; font-variant
     transform: translateX(0);
   }
 }
+
+/* Monitor-only Live Telemetry Badge & Automation Controls */
+.live-stream-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.live-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: monitorLivePulse 1.5s infinite;
+}
+
+@keyframes monitorLivePulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.35); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.controls-section {
+  margin-top: 18px;
+  padding: 16px;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+}
+
+.controls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.control-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+}
+
+.control-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.control-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  white-space: nowrap;
+}
+
+.control-sub {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  margin-top: 2px;
+}
+
+.control-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+}
+
+.control-metric-row strong {
+  color: var(--text, #0f172a);
+  font-size: 13px;
+}
+
+.control-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #64748b);
+}
+
+.control-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 8px;
+  background: var(--card, #ffffff);
+  color: var(--text, #0f172a);
+  font-size: 13px;
+}
+
+.control-slider {
+  width: 100%;
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+
+.control-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.control-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.control-progress {
+  width: 100%;
+  height: 7px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.control-progress-bar {
+  height: 100%;
+  background: #0284c7;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.control-status-pill {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--muted, #475569);
+}
+
+.control-status-pill.active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.control-status-pill.running {
+  background: rgba(2, 132, 199, 0.14);
+  color: #0369a1;
+}
+
+.control-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.control-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.control-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.control-switch-slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.control-switch input:checked + .control-switch-slider {
+  background: #10b981;
+}
+
+.control-switch input:checked + .control-switch-slider::before {
+  transform: translateX(18px);
+}
