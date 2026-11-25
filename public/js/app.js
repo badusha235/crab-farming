@@ -2662,63 +2662,6 @@
       });
     }
 
-    // 3. Scheduled Water Change
-    var btnStartWc = $('#btn-start-wc');
-    var btnStopWc = $('#btn-stop-wc');
-    var wcStatus = $('#ctrl-wc-status');
-    var wcWrap = $('#ctrl-wc-progress-wrap');
-    var wcBar = $('#ctrl-wc-progress-bar');
-    var wcVol = $('#ctrl-wc-volume');
-
-    if (btnStartWc && btnStopWc) {
-      btnStartWc.addEventListener('click', function () {
-        if (liveTelemetryStream.wcTimer) return;
-        var pct = 0;
-        var vol = wcVol ? wcVol.value : '25';
-        btnStartWc.disabled = true;
-        btnStopWc.disabled = false;
-        if (wcWrap) wcWrap.hidden = false;
-        if (wcBar) wcBar.style.width = '0%';
-        if (wcStatus) {
-          wcStatus.textContent = 'Draining (' + vol + '%)';
-          wcStatus.className = 'control-status-pill running';
-        }
-        toast('Started ' + vol + '% water exchange');
-        liveTelemetryStream.wcTimer = setInterval(function () {
-          pct += 8;
-          if (wcBar) wcBar.style.width = Math.min(100, pct) + '%';
-          if (pct >= 50 && pct < 100 && wcStatus) {
-            wcStatus.textContent = 'Refilling (' + vol + '%)';
-          }
-          if (pct >= 100) {
-            clearInterval(liveTelemetryStream.wcTimer);
-            liveTelemetryStream.wcTimer = null;
-            btnStartWc.disabled = false;
-            btnStopWc.disabled = true;
-            if (wcStatus) {
-              wcStatus.textContent = 'Refilled';
-              wcStatus.className = 'control-status-pill active';
-            }
-            toast(vol + '% water exchange completed');
-          }
-        }, 400);
-      });
-
-      btnStopWc.addEventListener('click', function () {
-        if (liveTelemetryStream.wcTimer) {
-          clearInterval(liveTelemetryStream.wcTimer);
-          liveTelemetryStream.wcTimer = null;
-        }
-        btnStartWc.disabled = false;
-        btnStopWc.disabled = true;
-        if (wcStatus) {
-          wcStatus.textContent = 'Aborted';
-          wcStatus.className = 'control-status-pill';
-        }
-        toast('Water exchange aborted');
-      });
-    }
-
     // 4. Aeration & Dissolved Oxygen
     var airToggle = $('#ctrl-air-toggle');
     var airModeLabel = $('#ctrl-air-mode-label');
