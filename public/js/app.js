@@ -19,7 +19,7 @@
     'Other'
   ];
 
-  var TABS = ['inventory', 'boxes', 'harvest', 'monitor'];
+  var TABS = ['inventory', 'boxes', 'harvest', 'monitor', 'info'];
   var COLORS = ['#1B7F9E', '#C8361F', '#4C8A25', '#8A5CC2', '#C98A00', '#4B5D67'];
   var RANGES = [['24 hours', 864e5], ['7 days', 7 * 864e5], ['30 days', 30 * 864e5]];
 
@@ -2719,6 +2719,142 @@
     });
   }
 
+  /* ---------- Info & Community Chat ---------- */
+  var INFO_CHAT_KEY = 'crab_community_chat_v1';
+  var infoChatFilter = 'All';
+  var infoChatMessages = (function () {
+    try {
+      var saved = JSON.parse(localStorage.getItem(INFO_CHAT_KEY) || 'null');
+      if (Array.isArray(saved) && saved.length) return saved;
+    } catch (e) {}
+    return [
+      {
+        id: 1,
+        author: 'Ramesh (Kochi Farm)',
+        topic: 'Medicine & Health',
+        text: 'Noticed white spot on two crabs after molting. Should I isolate them and use potassium permanganate bath?',
+        time: '10:15 AM',
+        mine: false
+      },
+      {
+        id: 2,
+        author: 'Dr. Nair (Aquaculture Vet)',
+        topic: 'Medicine & Health',
+        text: 'Yes, isolate immediately in a separate quarantine box. Maintain salinity around 22-25 ppt and add vitamin C + probiotic booster to feed.',
+        time: '10:22 AM',
+        mine: false
+      },
+      {
+        id: 3,
+        author: 'Suresh (Chennai RAS)',
+        topic: 'Water Quality',
+        text: 'Ammonia spiked to 0.25 mg/L this morning. Did a 25% brackish water exchange and increased aeration—back to 0.06 now.',
+        time: '11:05 AM',
+        mine: false
+      },
+      {
+        id: 4,
+        author: 'Anand (MudCrab Hub)',
+        topic: 'Feeding',
+        text: 'For 400g+ crabs, feeding chopped trash fish once in the evening keeps water cleaner than twice a day.',
+        time: '11:40 AM',
+        mine: false
+      }
+    ];
+  })();
+
+  function renderInfoChat() {
+    var feed = $('#info-chat-feed');
+    if (!feed) return;
+    feed.textContent = '';
+
+    var list = infoChatMessages.filter(function (m) {
+      return infoChatFilter === 'All' || m.topic === infoChatFilter;
+    });
+
+    if (!list.length) {
+      var empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.style.padding = '20px';
+      empty.style.textAlign = 'center';
+      empty.textContent = 'No messages in this topic yet. Start the discussion!';
+      feed.appendChild(empty);
+      return;
+    }
+
+    list.forEach(function (m) {
+      var msg = document.createElement('div');
+      msg.className = 'info-chat-msg' + (m.mine ? ' mine' : '');
+
+      var meta = document.createElement('div');
+      meta.className = 'info-chat-msg-meta';
+
+      var author = document.createElement('span');
+      author.className = 'info-chat-author';
+      author.textContent = m.author;
+
+      var tag = document.createElement('span');
+      tag.className = 'info-chat-topic-tag';
+      tag.textContent = m.topic;
+
+      var time = document.createElement('span');
+      time.textContent = m.time;
+
+      meta.appendChild(author);
+      meta.appendChild(tag);
+      meta.appendChild(time);
+
+      var text = document.createElement('div');
+      text.className = 'info-chat-text';
+      text.textContent = m.text;
+
+      msg.appendChild(meta);
+      msg.appendChild(text);
+      feed.appendChild(msg);
+    });
+
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function initInfoChat() {
+    var filters = document.querySelectorAll('#info-chat-filters .chip');
+    filters.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        infoChatFilter = btn.getAttribute('data-topic') || 'All';
+        filters.forEach(function (b) {
+          b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+        });
+        renderInfoChat();
+      });
+    });
+
+    var form = $('#info-chat-form');
+    var input = $('#info-chat-input');
+    var topicSel = $('#info-chat-topic');
+    if (form && input) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var txt = (input.value || '').trim();
+        if (!txt) return;
+        var topic = topicSel ? topicSel.value : 'General';
+        var now = new Date();
+        var timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        var farmName = (S.settings && S.settings.farm_name) ? S.settings.farm_name : 'My Farm';
+        infoChatMessages.push({
+          id: Date.now(),
+          author: farmName + ' (You)',
+          topic: topic,
+          text: txt,
+          time: timeStr,
+          mine: true
+        });
+        try { localStorage.setItem(INFO_CHAT_KEY, JSON.stringify(infoChatMessages)); } catch (err) {}
+        input.value = '';
+        renderInfoChat();
+      });
+    }
+  }
+
   /* ---------- 5. SETTINGS & USER MODALS ---------- */
   function openSettingsModal() {
     $('#s-farm').value = S.settings.farm_name || '';
@@ -2822,6 +2958,7 @@
     else if (S.tab === 'inventory') renderInventoryTable();
     else if (S.tab === 'harvest') renderHarvestTable();
     else if (S.tab === 'monitor') renderMonitor();
+    else if (S.tab === 'info') renderInfoChat();
   }
 
   /* ---------- Data Loader ---------- */
@@ -3142,6 +3279,7 @@
     if ($('#exp-readings')) $('#exp-readings').addEventListener('click', function () { triggerExport('readings'); });
 
     initMonitorControls();
+    initInfoChat();
 
     if ($('#file-import')) $('#file-import').addEventListener('change', function (e) {
       var f = e.target.files && e.target.files[0];

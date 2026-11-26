@@ -54,6 +54,7 @@
     <a href="#boxes" data-tab="boxes" aria-current="page">Boxes</a>
     <a href="#harvest" data-tab="harvest">Harvest</a>
     <a href="#monitor" data-tab="monitor">Monitor<span class="alert-dot" id="mon-dot" hidden></span></a>
+    <a href="#info" data-tab="info">Community</a>
   </nav>
 
   <!-- 1. INVENTORY VIEW -->
@@ -367,6 +368,40 @@
       <p>IoT sensors and controllers can post readings directly to <code>POST /api/monitor/readings</code> with JSON payload: <code>{"time": "2026-11-23T12:00:00", "temp": 28.5, "ph": 8.0, "source": "Tank 1"}</code>.</p>
       <p>You can also import CSV files exported from your logger with headers: <code>time,sensor,temp,ph</code>.</p>
     </details>
+  </section>
+
+  <!-- 5. INFO & COMMUNITY CHAT VIEW -->
+  <section class="view" id="view-info" hidden>
+    <div class="info-chat-shell">
+      <div class="info-chat-head">
+        <div>
+          <h2 style="margin:0;font-size:18px;font-weight:700">Community Info &amp; Doubts</h2>
+          <p class="muted" style="margin:2px 0 0;font-size:13px">Ask medicine doubts, water quality questions, and share crab farming tips</p>
+        </div>
+        <span class="control-status-pill active"><span class="live-pulse" style="margin-right:6px"></span>14 Farmers Online</span>
+      </div>
+
+      <div class="info-chat-filters" id="info-chat-filters" role="group" aria-label="Filter chat by topic">
+        <button type="button" class="chip" data-topic="All" aria-pressed="true">All</button>
+        <button type="button" class="chip" data-topic="Medicine & Health" aria-pressed="false">💊 Medicine &amp; Health</button>
+        <button type="button" class="chip" data-topic="Water Quality" aria-pressed="false">💧 Water Quality</button>
+        <button type="button" class="chip" data-topic="Feeding" aria-pressed="false">🦀 Feeding</button>
+        <button type="button" class="chip" data-topic="General" aria-pressed="false">💬 General</button>
+      </div>
+
+      <div class="info-chat-feed" id="info-chat-feed" aria-live="polite"></div>
+
+      <form class="info-chat-composer" id="info-chat-form">
+        <select class="control-select info-chat-topic-select" id="info-chat-topic" aria-label="Message topic">
+          <option value="Medicine & Health">💊 Medicine &amp; Health</option>
+          <option value="Water Quality">💧 Water Quality</option>
+          <option value="Feeding">🦀 Feeding</option>
+          <option value="General">💬 General</option>
+        </select>
+        <input type="text" class="info-chat-input" id="info-chat-input" placeholder="Ask a doubt or share a tip with the community..." autocomplete="off">
+        <button type="submit" class="btn primary" id="info-chat-send">Send</button>
+      </form>
+    </div>
   </section>
 </div>
 
