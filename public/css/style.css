@@ -1215,3 +1215,102 @@ table.t { border-collapse: collapse; width: 100%; min-width: 600px; font-variant
   color: var(--text, #0f172a);
   font-size: 13.5px;
 }
+
+/* Night Theme */
+.theme-toggle-btn {
+  color: var(--fg);
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  min-height: 34px;
+  border-radius: 999px;
+}
+
+.login-theme-btn {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+
+body.theme-night {
+  --bg: #0b1318;
+  --surface: #111d24;
+  --surface2: #172731;
+  --fg: #e6f1f5;
+  --muted: #93aab3;
+  --line: #233845;
+  --card: #111d24;
+  --border: #233845;
+  --text: #e6f1f5;
+  --focus: #38bdf8;
+  --good: #34d399;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --scrim: rgba(2, 8, 12, 0.72);
+  --sm-bg: #172b47; --sm-fg: #93c5fd; --sm-bd: #2a4a78;
+  --sf-bg: #3b192d; --sf-fg: #f9a8d4; --sf-bd: #6b294f;
+  --a-bg: #103224; --a-fg: #6ee7b7; --a-bd: #1d5c42;
+  --m-bg: #3a2a0b; --m-fg: #fcd34d; --m-bd: #6b4e14;
+  --h-bg: #172a4a; --h-fg: #93c5fd; --h-bd: #28497e;
+  --d-bg: #3d1820; --d-fg: #fda4af; --d-bd: #6e2635;
+  color-scheme: dark;
+}
+
+body.theme-night * {
+  scrollbar-color: #2c4654 #0f1a20;
+}
+
+body.theme-night .login-page {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(14, 165, 233, 0.16), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.12), transparent 45%),
+    #081015;
+}
+
+body.theme-night .login-shell {
+  border-color: #1f323e;
+}
+
+body.theme-night .login-brand h2 {
+  color: #f1f5f9;
+}
+
+body.theme-night .login-form input {
+  background: #0d171d;
+  border-color: #253b48;
+  color: #e6f1f5;
+}
+
+body.theme-night .login-form input:focus {
+  background: #111d24;
+  border-color: #38bdf8;
+}
+
+body.theme-night .control-card,
+body.theme-night .info-chat-feed {
+  background: #0d171d;
+}
+
+body.theme-night .info-chat-msg {
+  background: #132129;
+}
+
+body.theme-night .info-chat-msg.mine {
+  background: rgba(14, 165, 233, 0.14);
+  border-color: rgba(56, 189, 248, 0.32);
+}
+
+body.theme-night .info-chat-topic-tag {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+body.theme-night .control-select,
+body.theme-night .info-chat-input {
+  background: #111d24;
+  border-color: #253b48;
+  color: #e6f1f5;
+}

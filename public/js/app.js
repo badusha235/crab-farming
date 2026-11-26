@@ -2855,6 +2855,31 @@
     }
   }
 
+  function initThemeToggle() {
+    var THEME_KEY = 'crab_theme';
+    var btns = [$('#btn-theme-toggle'), $('#btn-login-theme-toggle')].filter(Boolean);
+
+    function applyTheme(isNight) {
+      document.body.classList.toggle('theme-night', isNight);
+      btns.forEach(function (btn) {
+        btn.textContent = isNight ? '☀️ Day' : '🌙 Night';
+        btn.setAttribute('aria-pressed', isNight ? 'true' : 'false');
+      });
+    }
+
+    var saved = false;
+    try { saved = localStorage.getItem(THEME_KEY) === 'night'; } catch (e) {}
+    applyTheme(saved);
+
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var nextNight = !document.body.classList.contains('theme-night');
+        applyTheme(nextNight);
+        try { localStorage.setItem(THEME_KEY, nextNight ? 'night' : 'day'); } catch (e) {}
+      });
+    });
+  }
+
   /* ---------- 5. SETTINGS & USER MODALS ---------- */
   function openSettingsModal() {
     $('#s-farm').value = S.settings.farm_name || '';
@@ -3280,6 +3305,7 @@
 
     initMonitorControls();
     initInfoChat();
+    initThemeToggle();
 
     if ($('#file-import')) $('#file-import').addEventListener('change', function (e) {
       var f = e.target.files && e.target.files[0];
