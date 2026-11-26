@@ -13,24 +13,45 @@
 
 <!-- LOGIN PAGE -->
 <div class="login-page" id="view-login" hidden>
-  <div class="login-card">
-    <div class="login-brand">
-      <span class="login-logo">🦀</span>
-      <h2>Crab Box Register</h2>
-      <p class="login-sub">Vertical Crab Aquaculture System</p>
+  <div class="login-shell">
+    <div class="login-hero">
+      <div class="login-hero-top">
+        <span class="login-hero-badge">🦀 Aquaculture OS</span>
+        <h1>Crab Box Register</h1>
+        <p class="login-hero-desc">Precision management for vertical crab farming, live water telemetry, and harvest operations.</p>
+      </div>
+      <ul class="login-features">
+        <li><span>📊</span> Live RAS water quality &amp; sensor gauges</li>
+        <li><span>📦</span> Individual crab box stocking &amp; molting tracking</li>
+        <li><span>🌊</span> Automated flow, level &amp; jet cleaning controls</li>
+        <li><span>💬</span> Farmer community &amp; aquaculture vet Q&amp;A</li>
+      </ul>
+      <div class="login-hero-foot">
+        <span class="login-hero-dot"></span> System Online · Secure Farm Access
+      </div>
     </div>
 
-    <!-- Sign In Form -->
-    <div id="email-signin-form" style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
-      <div class="field">
-        <label class="lbl" for="em-login-email">Email or Mobile Number</label>
-        <input id="em-login-email" type="text" placeholder="e.g. admin@crabfarm.in or 9876543210" autocomplete="username">
+    <div class="login-card">
+      <div class="login-brand">
+        <span class="login-logo">🦀</span>
+        <h2>Welcome back</h2>
+        <p class="login-sub">Sign in to manage your vertical crab farm</p>
       </div>
-      <div class="field">
-        <label class="lbl" for="em-login-pass">Password</label>
-        <input id="em-login-pass" type="password" placeholder="Enter your password" autocomplete="current-password">
+
+      <!-- Sign In Form -->
+      <div id="email-signin-form" class="login-form">
+        <div class="field">
+          <label class="lbl" for="em-login-email">Email or Mobile Number</label>
+          <input id="em-login-email" type="text" placeholder="e.g. admin@crabfarm.in or 9876543210" autocomplete="username">
+        </div>
+        <div class="field">
+          <label class="lbl" for="em-login-pass">Password</label>
+          <input id="em-login-pass" type="password" placeholder="Enter your password" autocomplete="current-password">
+        </div>
+        <button type="button" class="btn primary full-w login-submit" id="btn-email-signin">Sign In</button>
       </div>
-      <button type="button" class="btn primary full-w" id="btn-email-signin" style="margin-top:6px">Sign In</button>
+
+      <p class="login-footer-note">Protected farm workspace · Authorized personnel only</p>
     </div>
   </div>
 </div>
