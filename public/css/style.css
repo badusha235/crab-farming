@@ -103,6 +103,7 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 .btn.primary:hover { filter: brightness(1.07); background: var(--accent); }
 .btn.primary[disabled] { opacity: .55; cursor: default; }
 .btn.danger { color: var(--accent); }
+.btn.info-clr { color: #0284c7; }
 .btn.ghost { background: transparent; border-color: transparent; }
 .btn.small { min-height: 34px; padding: 6px 12px; font-size: 14px; }
 .icon-btn {
