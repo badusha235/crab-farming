@@ -3029,38 +3029,37 @@
 
   function initThemeToggle() {
     var THEME_KEY = 'crab_theme';
-    var btns = [$('#btn-theme-toggle'), $('#btn-login-theme-toggle')].filter(Boolean);
+    var lightBtn = $('#s-theme-light');
+    var darkBtn = $('#s-theme-dark');
 
     function applyTheme(isNight) {
       document.body.classList.toggle('theme-night', isNight);
-      btns.forEach(function (btn) {
-        btn.textContent = isNight ? '☀️' : '🌙';
-        btn.title = isNight ? 'Switch to Day Theme' : 'Switch to Night Theme';
-        btn.setAttribute('aria-pressed', isNight ? 'true' : 'false');
-      });
+      if (lightBtn) lightBtn.setAttribute('aria-pressed', isNight ? 'false' : 'true');
+      if (darkBtn) darkBtn.setAttribute('aria-pressed', isNight ? 'true' : 'false');
     }
 
     var saved = false;
     try { saved = localStorage.getItem(THEME_KEY) === 'night'; } catch (e) {}
     applyTheme(saved);
 
-    btns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var nextNight = !document.body.classList.contains('theme-night');
-        applyTheme(nextNight);
-        try { localStorage.setItem(THEME_KEY, nextNight ? 'night' : 'day'); } catch (e) {}
+    if (lightBtn) {
+      lightBtn.addEventListener('click', function () {
+        applyTheme(false);
+        try { localStorage.setItem(THEME_KEY, 'day'); } catch (e) {}
       });
-    });
+    }
+    if (darkBtn) {
+      darkBtn.addEventListener('click', function () {
+        applyTheme(true);
+        try { localStorage.setItem(THEME_KEY, 'night'); } catch (e) {}
+      });
+    }
   }
 
   /* ---------- 5. SETTINGS & USER MODALS ---------- */
   function openSettingsModal() {
     $('#s-farm').value = S.settings.farm_name || '';
     $('#s-count').value = S.settings.box_count || 40;
-    $('#s-tmin').value = S.settings.temp_min !== undefined ? S.settings.temp_min : 26;
-    $('#s-tmax').value = S.settings.temp_max !== undefined ? S.settings.temp_max : 32;
-    $('#s-pmin').value = S.settings.ph_min !== undefined ? S.settings.ph_min : 7.5;
-    $('#s-pmax').value = S.settings.ph_max !== undefined ? S.settings.ph_max : 8.5;
     $('#settings').hidden = false;
     $('#s-count').focus();
   }
@@ -3072,26 +3071,14 @@
       $('#s-count').focus(); return;
     }
 
-    var tmin = num($('#s-tmin').value);
-    var tmax = num($('#s-tmax').value);
-    var pmin = num($('#s-pmin').value);
-    var pmax = num($('#s-pmax').value);
-
-    if (tmin === null || tmax === null || tmin >= tmax) {
-      toast('Temp min must be below max.'); return;
-    }
-    if (pmin === null || pmax === null || pmin >= pmax) {
-      toast('pH min must be below max.'); return;
-    }
-
     try {
       var updated = await window.CrabApi.updateSettings({
         farm_name: $('#s-farm').value.trim(),
         box_count: count,
-        temp_min: tmin,
-        temp_max: tmax,
-        ph_min: pmin,
-        ph_max: pmax
+        temp_min: S.settings.temp_min !== undefined ? S.settings.temp_min : 26,
+        temp_max: S.settings.temp_max !== undefined ? S.settings.temp_max : 32,
+        ph_min: S.settings.ph_min !== undefined ? S.settings.ph_min : 7.5,
+        ph_max: S.settings.ph_max !== undefined ? S.settings.ph_max : 8.5
       });
       S.settings = updated;
       $('#settings').hidden = true;

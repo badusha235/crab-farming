@@ -13,7 +13,6 @@
 
 <!-- LOGIN PAGE -->
 <div class="login-page" id="view-login" hidden>
-  <button type="button" class="btn theme-toggle-btn login-theme-btn" id="btn-login-theme-toggle" aria-label="Toggle night theme" title="Toggle Night Theme">🌙</button>
   <div class="login-shell">
     <div class="login-hero">
       <div class="login-aqua-bg" aria-hidden="true">
@@ -78,7 +77,6 @@
     </div>
     <div class="top-actions">
       <span id="user-display" style="font-size:13px;color:var(--muted);font-weight:500;margin-right:2px"></span>
-      <button type="button" class="btn ghost theme-toggle-btn" id="btn-theme-toggle" aria-label="Toggle night theme" title="Toggle Night Theme">🌙</button>
       <button class="btn info-clr ghost" id="btn-settings">Settings</button>
       <button class="btn danger ghost" id="btn-header-logout">Log Out</button>
     </div>
@@ -802,26 +800,11 @@
     </div>
     <p class="muted" style="margin:0;font-size:13px">Boxes are numbered 1 to N (up to 500). Any occupied box stays visible.</p>
     
-    <h3>Safe water range</h3>
-    <div class="fields">
-      <div class="field">
-        <label class="lbl" for="s-tmin">Temp min <small>(&deg;C)</small></label>
-        <input id="s-tmin" type="number" inputmode="decimal" step="0.1">
-      </div>
-      <div class="field">
-        <label class="lbl" for="s-tmax">Temp max <small>(&deg;C)</small></label>
-        <input id="s-tmax" type="number" inputmode="decimal" step="0.1">
-      </div>
-      <div class="field">
-        <label class="lbl" for="s-pmin">pH min</label>
-        <input id="s-pmin" type="number" inputmode="decimal" step="0.1">
-      </div>
-      <div class="field">
-        <label class="lbl" for="s-pmax">pH max</label>
-        <input id="s-pmax" type="number" inputmode="decimal" step="0.1">
-      </div>
+    <h3>Appearance</h3>
+    <div class="control-chips" id="settings-theme-chips" role="group" aria-label="Theme mode">
+      <button type="button" class="chip" id="s-theme-light" data-theme="day" aria-pressed="true">☀️ Light</button>
+      <button type="button" class="chip" id="s-theme-dark" data-theme="night" aria-pressed="false">🌙 Dark</button>
     </div>
-    <p class="muted" style="margin:0;font-size:13px">Readings outside this range show in red and trigger an alert dot on the Monitor tab.</p>
     
     <div class="actions">
       <button class="btn" id="s-cancel">Cancel</button>
