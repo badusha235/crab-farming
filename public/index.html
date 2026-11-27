@@ -13,7 +13,7 @@
 
 <!-- LOGIN PAGE -->
 <div class="login-page" id="view-login" hidden>
-  <button type="button" class="btn theme-toggle-btn login-theme-btn" id="btn-login-theme-toggle" aria-label="Toggle night theme">🌙 Night</button>
+  <button type="button" class="btn theme-toggle-btn login-theme-btn" id="btn-login-theme-toggle" aria-label="Toggle night theme" title="Toggle Night Theme">🌙</button>
   <div class="login-shell">
     <div class="login-hero">
       <div class="login-aqua-bg" aria-hidden="true">
@@ -78,7 +78,7 @@
     </div>
     <div class="top-actions">
       <span id="user-display" style="font-size:13px;color:var(--muted);font-weight:500;margin-right:2px"></span>
-      <button type="button" class="btn ghost theme-toggle-btn" id="btn-theme-toggle" aria-label="Toggle night theme" title="Toggle Night Theme">🌙 Night</button>
+      <button type="button" class="btn ghost theme-toggle-btn" id="btn-theme-toggle" aria-label="Toggle night theme" title="Toggle Night Theme">🌙</button>
       <button class="btn info-clr ghost" id="btn-settings">Settings</button>
       <button class="btn danger ghost" id="btn-header-logout">Log Out</button>
     </div>
@@ -412,31 +412,59 @@
       <div class="info-chat-head">
         <div>
           <h2 style="margin:0;font-size:18px;font-weight:700">Community Info &amp; Doubts</h2>
-          <p class="muted" style="margin:2px 0 0;font-size:13px">Ask medicine doubts, water quality questions, and share crab farming tips</p>
+          <p class="muted" style="margin:2px 0 0;font-size:13px">Ask medicine doubts, water quality questions, or message members privately</p>
         </div>
-        <span class="control-status-pill active"><span class="live-pulse" style="margin-right:6px"></span>14 Farmers Online</span>
+        <div class="info-mode-tabs" id="info-mode-tabs" role="tablist" aria-label="Chat mode">
+          <button type="button" class="chip" data-chat-mode="community" aria-pressed="true">🌐 Community Chat</button>
+          <button type="button" class="chip" data-chat-mode="personal" aria-pressed="false">💬 Personal Chat</button>
+        </div>
       </div>
 
-      <div class="info-chat-filters" id="info-chat-filters" role="group" aria-label="Filter chat by topic">
-        <button type="button" class="chip" data-topic="All" aria-pressed="true">All</button>
-        <button type="button" class="chip" data-topic="Medicine & Health" aria-pressed="false">💊 Medicine &amp; Health</button>
-        <button type="button" class="chip" data-topic="Water Quality" aria-pressed="false">💧 Water Quality</button>
-        <button type="button" class="chip" data-topic="Feeding" aria-pressed="false">🦀 Feeding</button>
-        <button type="button" class="chip" data-topic="General" aria-pressed="false">💬 General</button>
+      <!-- Community Public Chat Panel -->
+      <div id="info-panel-community" class="info-chat-panel">
+        <div class="info-chat-filters" id="info-chat-filters" role="group" aria-label="Filter chat by topic">
+          <button type="button" class="chip" data-topic="All" aria-pressed="true">All</button>
+          <button type="button" class="chip" data-topic="Medicine & Health" aria-pressed="false">💊 Medicine &amp; Health</button>
+          <button type="button" class="chip" data-topic="Water Quality" aria-pressed="false">💧 Water Quality</button>
+          <button type="button" class="chip" data-topic="Feeding" aria-pressed="false">🦀 Feeding</button>
+          <button type="button" class="chip" data-topic="General" aria-pressed="false">💬 General</button>
+        </div>
+
+        <div class="info-chat-feed" id="info-chat-feed" aria-live="polite"></div>
+
+        <form class="info-chat-composer" id="info-chat-form">
+          <select class="control-select info-chat-topic-select" id="info-chat-topic" aria-label="Message topic">
+            <option value="Medicine & Health">💊 Medicine &amp; Health</option>
+            <option value="Water Quality">💧 Water Quality</option>
+            <option value="Feeding">🦀 Feeding</option>
+            <option value="General">💬 General</option>
+          </select>
+          <input type="text" class="info-chat-input" id="info-chat-input" placeholder="Ask a doubt or share a tip with the community..." autocomplete="off">
+          <button type="submit" class="btn primary" id="info-chat-send">Send</button>
+        </form>
       </div>
 
-      <div class="info-chat-feed" id="info-chat-feed" aria-live="polite"></div>
-
-      <form class="info-chat-composer" id="info-chat-form">
-        <select class="control-select info-chat-topic-select" id="info-chat-topic" aria-label="Message topic">
-          <option value="Medicine & Health">💊 Medicine &amp; Health</option>
-          <option value="Water Quality">💧 Water Quality</option>
-          <option value="Feeding">🦀 Feeding</option>
-          <option value="General">💬 General</option>
-        </select>
-        <input type="text" class="info-chat-input" id="info-chat-input" placeholder="Ask a doubt or share a tip with the community..." autocomplete="off">
-        <button type="submit" class="btn primary" id="info-chat-send">Send</button>
-      </form>
+      <!-- Personal Direct Chat Panel -->
+      <div id="info-panel-personal" class="info-dm-layout" hidden>
+        <aside class="info-dm-sidebar">
+          <div class="info-dm-sidebar-title">Direct Messages</div>
+          <div class="info-dm-contacts" id="info-dm-contacts"></div>
+        </aside>
+        <div class="info-dm-main">
+          <div class="info-dm-header">
+            <div>
+              <strong id="info-dm-peer-name">Dr. Nair (Aquaculture Vet)</strong>
+              <div class="muted" id="info-dm-peer-role" style="font-size:12px">Medicine &amp; Disease Specialist · Online</div>
+            </div>
+            <span class="control-status-pill active">Private Chat</span>
+          </div>
+          <div class="info-chat-feed" id="info-dm-feed" aria-live="polite"></div>
+          <form class="info-chat-composer" id="info-dm-form">
+            <input type="text" class="info-chat-input" id="info-dm-input" placeholder="Write a private message..." autocomplete="off">
+            <button type="submit" class="btn primary" id="info-dm-send">Send</button>
+          </form>
+        </div>
+      </div>
     </div>
   </section>
 </div>

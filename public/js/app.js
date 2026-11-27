@@ -2721,7 +2721,36 @@
 
   /* ---------- Info & Community Chat ---------- */
   var INFO_CHAT_KEY = 'crab_community_chat_v1';
+  var INFO_DM_KEY = 'crab_personal_chat_v1';
+  var infoChatMode = 'community';
   var infoChatFilter = 'All';
+  var activeDmPeerId = 'dr-nair';
+
+  var dmContacts = [
+    { id: 'dr-nair', name: 'Dr. Nair (Aquaculture Vet)', role: 'Medicine & Disease Specialist · Online' },
+    { id: 'ramesh', name: 'Ramesh (Kochi Farm)', role: 'Vertical Crab Farmer · Online' },
+    { id: 'suresh', name: 'Suresh (Chennai RAS)', role: 'RAS & Water Quality · Online' },
+    { id: 'anand', name: 'Anand (MudCrab Hub)', role: 'Feeding & Grow-out · Away' }
+  ];
+
+  var infoDmMessages = (function () {
+    try {
+      var saved = JSON.parse(localStorage.getItem(INFO_DM_KEY) || 'null');
+      if (saved && typeof saved === 'object') return saved;
+    } catch (e) {}
+    return {
+      'dr-nair': [
+        { author: 'Dr. Nair (Aquaculture Vet)', text: 'Hello! Feel free to message me directly for any crab medicine or disease doubts.', time: '09:45 AM', mine: false }
+      ],
+      'ramesh': [
+        { author: 'Ramesh (Kochi Farm)', text: 'Hey, let me know how your new vertical boxes are performing this week.', time: '10:30 AM', mine: false }
+      ],
+      'suresh': [
+        { author: 'Suresh (Chennai RAS)', text: 'Ping me anytime if you need help calibrating your pH or salinity levels.', time: '11:15 AM', mine: false }
+      ],
+      'anand': []
+    };
+  })();
   var infoChatMessages = (function () {
     try {
       var saved = JSON.parse(localStorage.getItem(INFO_CHAT_KEY) || 'null');
@@ -2804,6 +2833,18 @@
       meta.appendChild(tag);
       meta.appendChild(time);
 
+      if (!m.mine) {
+        var dmBtn = document.createElement('button');
+        dmBtn.type = 'button';
+        dmBtn.className = 'info-chat-dm-btn';
+        dmBtn.textContent = '💬 Message';
+        dmBtn.title = 'Send personal message to ' + m.author;
+        dmBtn.addEventListener('click', function () {
+          openPersonalChatWith(m.author);
+        });
+        meta.appendChild(dmBtn);
+      }
+
       var text = document.createElement('div');
       text.className = 'info-chat-text';
       text.textContent = m.text;
@@ -2814,9 +2855,140 @@
     });
 
     feed.scrollTop = feed.scrollHeight;
+    renderPersonalChat();
+  }
+
+  function renderPersonalChat() {
+    var contactsEl = $('#info-dm-contacts');
+    var feedEl = $('#info-dm-feed');
+    var peerNameEl = $('#info-dm-peer-name');
+    var peerRoleEl = $('#info-dm-peer-role');
+    if (!contactsEl || !feedEl) return;
+
+    var activePeer = dmContacts.find(function (c) { return c.id === activeDmPeerId; }) || dmContacts[0];
+    if (peerNameEl) peerNameEl.textContent = activePeer.name;
+    if (peerRoleEl) peerRoleEl.textContent = activePeer.role;
+
+    contactsEl.textContent = '';
+    dmContacts.forEach(function (c) {
+      var thread = infoDmMessages[c.id] || [];
+      var lastMsg = thread.length ? thread[thread.length - 1].text : 'No messages yet';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'info-dm-contact' + (c.id === activeDmPeerId ? ' active' : '');
+
+      var nm = document.createElement('span');
+      nm.className = 'info-dm-contact-name';
+      nm.textContent = c.name;
+
+      var sub = document.createElement('span');
+      sub.className = 'info-dm-contact-sub';
+      sub.textContent = lastMsg;
+
+      btn.appendChild(nm);
+      btn.appendChild(sub);
+      btn.addEventListener('click', function () {
+        activeDmPeerId = c.id;
+        renderPersonalChat();
+      });
+      contactsEl.appendChild(btn);
+    });
+
+    feedEl.textContent = '';
+    var msgs = infoDmMessages[activeDmPeerId] || [];
+    if (!msgs.length) {
+      var empty = document.createElement('div');
+      empty.className = 'muted';
+      empty.style.padding = '20px';
+      empty.style.textAlign = 'center';
+      empty.textContent = 'Start a private conversation with ' + activePeer.name + '.';
+      feedEl.appendChild(empty);
+      return;
+    }
+
+    msgs.forEach(function (m) {
+      var msg = document.createElement('div');
+      msg.className = 'info-chat-msg' + (m.mine ? ' mine' : '');
+
+      var meta = document.createElement('div');
+      meta.className = 'info-chat-msg-meta';
+      var author = document.createElement('span');
+      author.className = 'info-chat-author';
+      author.textContent = m.author;
+      var time = document.createElement('span');
+      time.textContent = m.time;
+      meta.appendChild(author);
+      meta.appendChild(time);
+
+      var text = document.createElement('div');
+      text.className = 'info-chat-text';
+      text.textContent = m.text;
+
+      msg.appendChild(meta);
+      msg.appendChild(text);
+      feedEl.appendChild(msg);
+    });
+    feedEl.scrollTop = feedEl.scrollHeight;
+  }
+
+  function switchInfoChatMode(mode) {
+    infoChatMode = mode || 'community';
+    var modeBtns = document.querySelectorAll('#info-mode-tabs .chip');
+    var commPanel = $('#info-panel-community');
+    var dmPanel = $('#info-panel-personal');
+    modeBtns.forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-chat-mode') === infoChatMode ? 'true' : 'false');
+    });
+    if (commPanel) commPanel.hidden = (infoChatMode !== 'community');
+    if (dmPanel) dmPanel.hidden = (infoChatMode !== 'personal');
+  }
+
+  function openPersonalChatWith(authorName) {
+    var existing = dmContacts.find(function (c) { return c.name === authorName; });
+    if (!existing) {
+      var newId = 'peer-' + authorName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      existing = { id: newId, name: authorName, role: 'Community Member · Online' };
+      dmContacts.unshift(existing);
+    }
+    activeDmPeerId = existing.id;
+    switchInfoChatMode('personal');
+    renderPersonalChat();
+    var dmInput = $('#info-dm-input');
+    if (dmInput) dmInput.focus();
   }
 
   function initInfoChat() {
+    var modeBtns = document.querySelectorAll('#info-mode-tabs .chip');
+
+    modeBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        switchInfoChatMode(btn.getAttribute('data-chat-mode') || 'community');
+        renderInfoChat();
+      });
+    });
+
+    var dmForm = $('#info-dm-form');
+    var dmInput = $('#info-dm-input');
+    if (dmForm && dmInput) {
+      dmForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var txt = (dmInput.value || '').trim();
+        if (!txt) return;
+        var now = new Date();
+        var timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        var farmName = (S.settings && S.settings.farm_name) ? S.settings.farm_name : 'My Farm';
+        if (!infoDmMessages[activeDmPeerId]) infoDmMessages[activeDmPeerId] = [];
+        infoDmMessages[activeDmPeerId].push({
+          author: farmName + ' (You)',
+          text: txt,
+          time: timeStr,
+          mine: true
+        });
+        try { localStorage.setItem(INFO_DM_KEY, JSON.stringify(infoDmMessages)); } catch (err) {}
+        dmInput.value = '';
+        renderPersonalChat();
+      });
+    }
     var filters = document.querySelectorAll('#info-chat-filters .chip');
     filters.forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -2862,7 +3034,8 @@
     function applyTheme(isNight) {
       document.body.classList.toggle('theme-night', isNight);
       btns.forEach(function (btn) {
-        btn.textContent = isNight ? '☀️ Day' : '🌙 Night';
+        btn.textContent = isNight ? '☀️' : '🌙';
+        btn.title = isNight ? 'Switch to Day Theme' : 'Switch to Night Theme';
         btn.setAttribute('aria-pressed', isNight ? 'true' : 'false');
       });
     }
